@@ -1,4 +1,4 @@
-import type { AttackEvent, DefenseType, FighterName, FighterPose, Hand, PunchType } from '../game/types'
+import type { AttackEvent, DefenseType, FighterName, FighterPose, FighterState, Hand, PunchType } from '../game/types'
 import { ANIMATION_FRAME_DELAY_MS } from './androidMirrorConstants'
 import { resolveMobileAssetUrl } from './mobileAssetUrls'
 
@@ -60,6 +60,33 @@ const koFile = (fighter: FighterName, pose: FighterPose): string => {
   if (pose === 'knockedDown') return 'lizard_knocked_down_0.png'
   return 'lizard_rising_0.png'
 }
+
+/**
+ * True when `pickFighterSpriteFile` would use the idle loop (no KO, punch mid-frame, or block/dodge frames).
+ * Bobbing and depth scaling pause unless both fighters satisfy this at once.
+ */
+export const fighterSpriteIdleForBobbing = (
+  fighter: FighterName,
+  pose: FighterPose,
+  mode: FighterState['mode'],
+  defenseType: DefenseType,
+  lastAttack: AttackEvent | null,
+): boolean => {
+  if (pose === 'fall' || pose === 'knockedDown' || pose === 'rise') return false
+  if (pose === 'attacking' && lastAttack?.attacker === fighter) return false
+  if (pose === 'defending' || mode === 'defense') {
+    return defenseType === 'none'
+  }
+  return true
+}
+
+export const bothFightersIdleForBobbing = (
+  satoshi: FighterState,
+  lizard: FighterState,
+  lastAttack: AttackEvent | null,
+): boolean =>
+  fighterSpriteIdleForBobbing('satoshi', satoshi.pose, satoshi.mode, satoshi.defenseType, lastAttack) &&
+  fighterSpriteIdleForBobbing('lizard', lizard.pose, lizard.mode, lizard.defenseType, lastAttack)
 
 export const pickFighterSpriteFile = (
   fighter: FighterName,

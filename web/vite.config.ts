@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/binance-api': {
-        target: 'https://testnet.binance.vision',
+        target: 'https://api.binance.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/binance-api/, ''),
       },
@@ -16,9 +16,9 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/coinbase-api/, ''),
       },
-      /** Browser → same-origin WS → Vite → Binance Spot Testnet combined stream */
+      /** Optional same-origin WS proxy if you set `VITE_BINANCE_WS_URL` to `/ws-binance/...`. */
       '/ws-binance': {
-        target: 'wss://stream.testnet.binance.vision',
+        target: 'wss://stream.binance.com:9443',
         changeOrigin: true,
         ws: true,
         secure: true,

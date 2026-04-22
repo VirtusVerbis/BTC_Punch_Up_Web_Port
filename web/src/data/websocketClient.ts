@@ -1,3 +1,5 @@
+import { WS_RECONNECT_PROBE_MS } from './exchangeConstants'
+
 interface WebSocketClientOptions<T> {
   url: string
   /** If set with `onMessage`, parsed snapshots invoke `onMessage`. */
@@ -11,13 +13,11 @@ interface WebSocketClientOptions<T> {
 }
 
 const DEFAULT_MAX_PAYLOAD_BYTES = 32_768
-const MAX_BACKOFF_MS = 30_000
 
 export class SafeWebSocketClient<T = void> {
   private socket: WebSocket | null = null
   private reconnectTimer: number | null = null
   private shouldReconnect = true
-  private reconnectAttempt = 0
 
   constructor(private readonly options: WebSocketClientOptions<T>) {
     const hasJson = Boolean(options.onJsonMessage)
@@ -28,11 +28,14 @@ export class SafeWebSocketClient<T = void> {
   }
 
   connect() {
+    if (this.socket) {
+      const rs = this.socket.readyState
+      if (rs === WebSocket.CONNECTING || rs === WebSocket.OPEN) return
+    }
     this.options.onStatus?.('connecting')
     this.socket = new WebSocket(this.options.url)
 
     this.socket.onopen = () => {
-      this.reconnectAttempt = 0
       this.options.onStatus?.('connected')
       if (this.socket) {
         this.options.onOpen?.(this.socket)
@@ -82,10 +85,15 @@ export class SafeWebSocketClient<T = void> {
   }
 
   private scheduleReconnect() {
-    const backoffBase = Math.min(2 ** this.reconnectAttempt * 1000, MAX_BACKOFF_MS)
-    const jitter = Math.floor(Math.random() * 300)
-    const wait = backoffBase + jitter
-    this.reconnectAttempt += 1
-    this.reconnectTimer = window.setTimeout(() => this.connect(), wait)
+    /** Match Android `WebSocketRepository`: probe/reconnect on a ~10s cadence. */
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer)
+    }
+    const jitter = Math.floor(Math.random() * 500)
+    const wait = WS_RECONNECT_PROBE_MS + jitter
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null
+      this.connect()
+    }, wait)
   }
 }

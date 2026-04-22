@@ -22,6 +22,14 @@ export interface MarketFeedUpdate {
   }
 }
 
+/**
+ * REST polling fills gaps when WS does not deliver usable fields (e.g. price from ticker/bookTicker but no trades).
+ * Per-exchange REST is skipped only when that exchange is WS-connected, has price, and buy+sell volume > 0.
+ */
+const ENABLE_REST_FALLBACK = true
+/** Mirror Android: direct exchange WebSockets from `BinanceWebSocketService` / `CoinbaseWebSocketService`. */
+const USE_WEBSOCKET_TRANSPORT = true
+
 const emptySnapshot = (exchange: 'binance' | 'coinbase'): ExchangeSnapshot => ({
   exchange,
   price: 0,
@@ -51,6 +59,8 @@ export class MarketDataService {
   private emitTimer: number | null = null
   private resetTimer: number | null = null
   private fallbackTimer: number | null = null
+  private lastBinancePollSuccessAt = 0
+  private lastCoinbasePollSuccessAt = 0
 
   private readonly binanceClient = new SafeWebSocketClient({
     url: env.binanceWsUrl,
@@ -82,16 +92,22 @@ export class MarketDataService {
 
   constructor(private readonly onUpdate: (update: MarketFeedUpdate) => void) {}
 
+  private setStatus(exchange: 'binance' | 'coinbase', status: FeedStatus) {
+    this.status = { ...this.status, [exchange]: status }
+  }
+
   start() {
-    this.binanceClient.connect()
-    this.coinbaseClient.connect()
+    if (USE_WEBSOCKET_TRANSPORT) {
+      this.binanceClient.connect()
+      this.coinbaseClient.connect()
+    }
     if (this.emitTimer === null) {
       this.emitTimer = window.setInterval(() => this.pushSnapshot(), EXCHANGE_EMIT_THROTTLE_MS)
     }
     if (this.resetTimer === null) {
       this.resetTimer = window.setInterval(() => this.resetVolumeAccumulators(), VOLUME_RESET_INTERVAL_MS)
     }
-    if (this.fallbackTimer === null) {
+    if (ENABLE_REST_FALLBACK && this.fallbackTimer === null) {
       this.fallbackTimer = window.setInterval(() => {
         void this.pollRestFallback()
       }, VOLUME_RESET_INTERVAL_MS)
@@ -112,8 +128,10 @@ export class MarketDataService {
       window.clearInterval(this.fallbackTimer)
       this.fallbackTimer = null
     }
-    this.binanceClient.disconnect()
-    this.coinbaseClient.disconnect()
+    if (USE_WEBSOCKET_TRANSPORT) {
+      this.binanceClient.disconnect()
+      this.coinbaseClient.disconnect()
+    }
   }
 
   private resetVolumeAccumulators() {
@@ -142,6 +160,16 @@ export class MarketDataService {
     if (et === '24hrTicker') {
       const px = parseBinanceTickerClosePrice(payload)
       if (px !== null) this.latestBinancePrice = px
+      return
+    }
+
+    /** Android `BinanceBookTickerStream`: best bid `b` / best ask `a` (strings). */
+    if (et === 'bookTicker') {
+      const bid = Number(inner.b)
+      const ask = Number(inner.a)
+      if (Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > 0 && ask >= bid) {
+        this.latestBinancePrice = (bid + ask) / 2
+      }
     }
   }
 
@@ -175,8 +203,24 @@ export class MarketDataService {
   private async pollRestFallback() {
     const binanceBase = import.meta.env.DEV ? '/binance-api' : env.binanceApiOrigin
     const coinbaseBase = import.meta.env.DEV ? '/coinbase-api' : 'https://api.exchange.coinbase.com'
+    const now = Date.now()
 
-    if (this.status.binance !== 'connected' || this.latestBinancePrice <= 0) {
+    const skipBinanceRest =
+      USE_WEBSOCKET_TRANSPORT &&
+      ENABLE_REST_FALLBACK &&
+      this.status.binance === 'connected' &&
+      this.latestBinancePrice > 0 &&
+      this.binanceBuyAcc + this.binanceSellAcc > 0
+
+    const skipCoinbaseRest =
+      USE_WEBSOCKET_TRANSPORT &&
+      ENABLE_REST_FALLBACK &&
+      this.status.coinbase === 'connected' &&
+      this.latestCoinbasePrice > 0 &&
+      this.coinbaseBuyAcc + this.coinbaseSellAcc > 0
+
+    if (!skipBinanceRest) {
+      if (this.status.binance === 'disconnected') this.setStatus('binance', 'connecting')
       try {
         const priceRes = await fetch(`${binanceBase}/api/v3/ticker/price?symbol=BTCUSDT`)
         if (priceRes.ok) {
@@ -201,12 +245,21 @@ export class MarketDataService {
             this.binanceSellAcc = sell
           }
         }
+        if (this.latestBinancePrice > 0) {
+          this.lastBinancePollSuccessAt = now
+          this.setStatus('binance', 'connected')
+        } else if (now - this.lastBinancePollSuccessAt > VOLUME_RESET_INTERVAL_MS * 3) {
+          this.setStatus('binance', 'disconnected')
+        }
       } catch {
-        // Ignore; websocket path may recover first.
+        if (now - this.lastBinancePollSuccessAt > VOLUME_RESET_INTERVAL_MS * 3) {
+          this.setStatus('binance', 'disconnected')
+        }
       }
     }
 
-    if (this.status.coinbase !== 'connected' || this.latestCoinbasePrice <= 0) {
+    if (!skipCoinbaseRest) {
+      if (this.status.coinbase === 'disconnected') this.setStatus('coinbase', 'connecting')
       try {
         const tickerRes = await fetch(`${coinbaseBase}/products/${encodeURIComponent(env.coinbaseProductId)}/ticker`)
         if (tickerRes.ok) {
@@ -236,8 +289,16 @@ export class MarketDataService {
             this.coinbaseSellAcc = sell
           }
         }
+        if (this.latestCoinbasePrice > 0) {
+          this.lastCoinbasePollSuccessAt = now
+          this.setStatus('coinbase', 'connected')
+        } else if (now - this.lastCoinbasePollSuccessAt > VOLUME_RESET_INTERVAL_MS * 3) {
+          this.setStatus('coinbase', 'disconnected')
+        }
       } catch {
-        // Ignore; websocket path may recover first.
+        if (now - this.lastCoinbasePollSuccessAt > VOLUME_RESET_INTERVAL_MS * 3) {
+          this.setStatus('coinbase', 'disconnected')
+        }
       }
     }
   }

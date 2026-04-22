@@ -151,19 +151,34 @@ body {
   color: #ffffff;
   text-transform: none;
   letter-spacing: 0.02em;
-  font-size: clamp(0.55rem, 2.2vw, 0.72rem);
+  font-size: clamp(0.6875rem, 2.75vw, 0.9rem);
   display: flex;
   align-items: center;
   gap: 0.2rem;
 }
 
+.overlay-ticker {
+  white-space: nowrap;
+}
+
+.overlay-label-end {
+  justify-content: flex-end;
+}
+
 .feed-glyph {
-  font-size: 0.65em;
+  font-size: 0.78em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.feed-glyph-svg {
+  display: block;
 }
 
 .overlay-price {
   margin: 0 0 0.15rem;
-  font-size: clamp(0.75rem, 3vw, 0.95rem);
+  font-size: clamp(0.9375rem, 3.75vw, 1.1875rem);
   font-weight: 600;
 }
 
@@ -198,7 +213,7 @@ body {
 
 .overlay-mode {
   margin: 0.15rem 0 0.1rem;
-  font-size: clamp(0.55rem, 2.2vw, 0.72rem);
+  font-size: clamp(0.6875rem, 2.75vw, 0.9rem);
   font-weight: 600;
 }
 
@@ -226,7 +241,7 @@ body {
   border: 1px solid #74a8e6;
   border-radius: 10px;
   background: rgba(21, 24, 41, 0.75);
-  color: inherit;
+  color: #f7931a;
   min-width: 100px;
   padding: 0.35rem 0.45rem;
   display: flex;
@@ -246,8 +261,24 @@ body {
 }
 
 .subtle {
-  color: #b5af9f;
+  color: #f7931a;
   font-size: 0.62rem;
+}
+
+.time-label {
+  color: #f7931a;
+}
+
+.time-block-height {
+  color: #f7931a;
+  font-size: 1.25em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.time-elapsed {
+  color: #f7931a;
+  font-size: 0.775rem;
 }
 
 .disclaimer {

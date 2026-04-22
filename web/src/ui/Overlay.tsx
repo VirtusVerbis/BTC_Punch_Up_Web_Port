@@ -35,13 +35,35 @@ const maxVolumeAll = (m: MarketSnapshot): number => {
 
 const modeLabel = (mode: Mode): string => (mode === 'offense' ? 'Offense' : 'Defense')
 
+const deriveEffectiveStatus = (
+  raw: FeedStatus,
+  price: number,
+  buyVolume: number,
+  sellVolume: number,
+): FeedStatus => {
+  if (raw === 'connected' || raw === 'connecting') return raw
+  const hasLiveData = (Number.isFinite(price) && price > 0) || buyVolume > 0 || sellVolume > 0
+  return hasLiveData ? 'connected' : 'disconnected'
+}
+
 const FeedGlyph = ({ status }: { status: FeedStatus }) => {
   const on = status === 'connected'
   const color = on ? '#4caf50' : status === 'connecting' ? '#ffc107' : '#757575'
-  const label = on ? '●' : status === 'connecting' ? '◐' : '○'
   return (
     <span className="feed-glyph" style={{ color }} title={status} aria-hidden>
-      {label}
+      <svg
+        className="feed-glyph-svg"
+        viewBox="0 0 24 24"
+        width="12"
+        height="12"
+        role="img"
+        aria-label="wifi status"
+      >
+        <path
+          fill="currentColor"
+          d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Zm0-2.8a5.9 5.9 0 0 1 4.2 1.8l1.3-1.4a7.8 7.8 0 0 0-11 0l1.3 1.4A5.9 5.9 0 0 1 12 15.7Zm0-4.4a10.2 10.2 0 0 1 7.3 3l1.3-1.4a12.1 12.1 0 0 0-17.2 0l1.3 1.4a10.2 10.2 0 0 1 7.3-3Zm0-4.4c-4 0-7.8 1.6-10.6 4.4L2.7 8.7a14.9 14.9 0 0 1 18.6 0l1.3-1.4A14.8 14.8 0 0 0 12 6.9Z"
+        />
+      </svg>
     </span>
   )
 }
@@ -152,10 +174,23 @@ export const Overlay = ({
   const binPriceLabel = formatExchangePriceLabel(market.binance.price)
   const cbPriceLabel = formatExchangePriceLabel(market.coinbase.price)
 
+  const effectiveBinStatus = deriveEffectiveStatus(
+    status.binance,
+    market.binance.price,
+    market.binance.buyVolume,
+    market.binance.sellVolume,
+  )
+  const effectiveCbStatus = deriveEffectiveStatus(
+    status.coinbase,
+    market.coinbase.price,
+    market.coinbase.buyVolume,
+    market.coinbase.sellVolume,
+  )
+
   const pBin = market.binance.price
   const prevBin = prevBinance.current
   const binanceUnavailable = binPriceLabel === 'Unavailable'
-  const binanceColor = status.binance === 'connected'
+  const binanceColor = effectiveBinStatus === 'connected'
     ? prevBin === undefined || prevBin === pBin
       ? '#ffffff'
       : pBin > prevBin
@@ -167,7 +202,7 @@ export const Overlay = ({
   const pCb = market.coinbase.price
   const prevCb = prevCoinbase.current
   const coinbaseUnavailable = cbPriceLabel === 'Unavailable'
-  const coinbaseColor = status.coinbase === 'connected'
+  const coinbaseColor = effectiveCbStatus === 'connected'
     ? prevCb === undefined || prevCb === pCb
       ? '#ffffff'
       : pCb > prevCb
@@ -186,7 +221,7 @@ export const Overlay = ({
       <div className="overlay-row">
         <div className="overlay-column overlay-column-start">
           <p className="overlay-label">
-            Binance <FeedGlyph status={status.binance} />
+            Binance <span className="overlay-ticker">(BTC-USDT)</span> <FeedGlyph status={effectiveBinStatus} />
           </p>
           <p className="overlay-price" style={{ color: binanceColor }}>
             {binanceUnavailable ? binPriceLabel : `$${binPriceLabel}`}
@@ -212,15 +247,15 @@ export const Overlay = ({
           <p className="overlay-ko-count">{satoshiKoCount}</p>
         </div>
         <button className="time-button" type="button" onClick={onTimeClick}>
-          <span className="overlay-label">Time</span>
-          <span className={block.blockFlashOn ? 'flash' : ''}>
+          <span className="overlay-label time-label">Time</span>
+          <span className={`time-block-height ${block.blockFlashOn ? 'flash' : ''}`}>
             {block.blockHeight === null ? '—' : block.blockHeight}
           </span>
-          <span className={block.staleFlashOn ? 'flash' : 'subtle'}>{formatElapsed(block.elapsedMs)}</span>
+          <span className={`time-elapsed ${block.staleFlashOn ? 'flash' : 'subtle'}`}>{formatElapsed(block.elapsedMs)}</span>
         </button>
         <div className="overlay-column overlay-column-end">
-          <p className="overlay-label">
-            Coinbase <FeedGlyph status={status.coinbase} />
+          <p className="overlay-label overlay-label-end">
+            Coinbase <span className="overlay-ticker">(BTC-USD)</span> <FeedGlyph status={effectiveCbStatus} />
           </p>
           <p className="overlay-price" style={{ color: coinbaseColor }}>
             {coinbaseUnavailable ? cbPriceLabel : `$${cbPriceLabel}`}
