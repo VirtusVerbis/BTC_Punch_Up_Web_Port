@@ -39,3 +39,6 @@ Thumbs.db
 
 # Misc
 *.local
+
+# Local Android reference clone (not part of web app source)
+.reference-android/

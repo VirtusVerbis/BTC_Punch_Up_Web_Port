@@ -6,5 +6,15 @@ export const formatElapsed = (elapsedMs: number): string => {
   return [hours, minutes, seconds].map((v) => String(v).padStart(2, '0')).join(':')
 }
 
+/** Legacy numeric formatter (positive finite only). */
 export const formatPrice = (value: number): string =>
   Number.isFinite(value) && value > 0 ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'
+
+/**
+ * Display string for an exchange last price.
+ * Android `PriceDisplay` keeps showing the last non-null price even if the feed disconnects.
+ */
+export const formatExchangePriceLabel = (price: number): string => {
+  if (!Number.isFinite(price) || price <= 0) return 'Unavailable'
+  return price.toLocaleString(undefined, { maximumFractionDigits: 2 })
+}

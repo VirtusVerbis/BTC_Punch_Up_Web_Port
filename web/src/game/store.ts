@@ -16,6 +16,10 @@ interface GameState {
   lizard: FighterState
   lastAttack: AttackEvent | null
   alignCharacters: boolean
+  /** KOs scored by Satoshi (Lizard knocked out). Mirrors Android `satoshiKOCount`. */
+  satoshiKoCount: number
+  /** KOs scored by Lizard (Satoshi knocked out). Mirrors Android `lizardKOCount`. */
+  lizardKoCount: number
   applyMarketTick: (market: MarketSnapshot, ts?: number) => void
   toggleCharacterAlignment: () => void
   resetDamage: () => void
@@ -64,6 +68,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   lizard: createFighter('lizard'),
   lastAttack: null,
   alignCharacters: false,
+  satoshiKoCount: 0,
+  lizardKoCount: 0,
 
   applyMarketTick: (market, ts = Date.now()) => {
     const current = get()
@@ -112,7 +118,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastAttack = { attacker: 'lizard', hand: 'right', punchType: lizardPunch, landed, ts }
     }
 
-    if (satoshi.damagePoints >= MAX_DAMAGE_POINTS) {
+    let satoshiKoCount = current.satoshiKoCount
+    let lizardKoCount = current.lizardKoCount
+    const lizardKo = lizard.damagePoints >= MAX_DAMAGE_POINTS
+    const satoshiKo = satoshi.damagePoints >= MAX_DAMAGE_POINTS
+    if (lizardKo) satoshiKoCount += 1
+    if (satoshiKo) lizardKoCount += 1
+
+    if (satoshiKo) {
       satoshi = {
         ...satoshi,
         damagePoints: 0,
@@ -120,7 +133,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         pose: 'fall',
       }
     }
-    if (lizard.damagePoints >= MAX_DAMAGE_POINTS) {
+    if (lizardKo) {
       lizard = {
         ...lizard,
         damagePoints: 0,
@@ -129,7 +142,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    set({ satoshi, lizard, lastAttack })
+    set({ satoshi, lizard, lastAttack, satoshiKoCount, lizardKoCount })
   },
 
   toggleCharacterAlignment: () => {

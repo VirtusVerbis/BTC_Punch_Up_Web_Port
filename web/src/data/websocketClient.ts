@@ -1,21 +1,31 @@
 interface WebSocketClientOptions<T> {
   url: string
-  parseMessage: (payload: unknown) => T | null
-  onMessage: (message: T) => void
+  /** If set with `onMessage`, parsed snapshots invoke `onMessage`. */
+  parseMessage?: (payload: unknown) => T | null
+  onMessage?: (message: T) => void
+  /** Raw JSON handler (e.g. multi-type exchange streams). Runs first; then `parseMessage` when both are set. */
+  onJsonMessage?: (payload: unknown) => void
   onStatus?: (status: 'connecting' | 'connected' | 'disconnected') => void
+  onOpen?: (socket: WebSocket) => void
   maxPayloadBytes?: number
 }
 
 const DEFAULT_MAX_PAYLOAD_BYTES = 32_768
 const MAX_BACKOFF_MS = 30_000
 
-export class SafeWebSocketClient<T> {
+export class SafeWebSocketClient<T = void> {
   private socket: WebSocket | null = null
   private reconnectTimer: number | null = null
   private shouldReconnect = true
   private reconnectAttempt = 0
 
-  constructor(private readonly options: WebSocketClientOptions<T>) {}
+  constructor(private readonly options: WebSocketClientOptions<T>) {
+    const hasJson = Boolean(options.onJsonMessage)
+    const hasParsed = Boolean(options.parseMessage && options.onMessage)
+    if (!hasJson && !hasParsed) {
+      throw new Error('SafeWebSocketClient: provide onJsonMessage and/or parseMessage+onMessage')
+    }
+  }
 
   connect() {
     this.options.onStatus?.('connecting')
@@ -24,6 +34,9 @@ export class SafeWebSocketClient<T> {
     this.socket.onopen = () => {
       this.reconnectAttempt = 0
       this.options.onStatus?.('connected')
+      if (this.socket) {
+        this.options.onOpen?.(this.socket)
+      }
     }
 
     this.socket.onclose = () => {
@@ -46,9 +59,12 @@ export class SafeWebSocketClient<T> {
 
       try {
         const parsedRaw = JSON.parse(payloadText) as unknown
-        const parsed = this.options.parseMessage(parsedRaw)
-        if (parsed) {
-          this.options.onMessage(parsed)
+        this.options.onJsonMessage?.(parsedRaw)
+        if (this.options.parseMessage && this.options.onMessage) {
+          const parsed = this.options.parseMessage(parsedRaw)
+          if (parsed) {
+            this.options.onMessage(parsed)
+          }
         }
       } catch {
         // Ignore malformed payloads.

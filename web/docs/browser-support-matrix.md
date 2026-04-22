@@ -15,10 +15,10 @@ The app is expected to be playable on modern browsers where websocket and ES mod
 - Binance/Coinbase feed status updates are visible.
 - `Time` label click/tap toggles character alignment.
 - Animations remain responsive and controls remain clickable.
-- Block height label/timer renders and updates (live or mock fallback).
+- Block height label/timer renders and updates (live Mempool API).
 
 ## Graceful degradation
 
-- If websocket feeds are unavailable, app remains usable in mock mode.
+- If websocket feeds are unavailable, exchange panels show disconnected / unavailable until feeds recover.
 - On lower-power devices, animation quality may reduce while gameplay remains functional.
 - On narrow/wide screens, scene keeps fixed aspect ratio with letterbox/pillarbox.

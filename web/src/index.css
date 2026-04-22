@@ -29,6 +29,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  position: relative;
 }
 
 .stage-shell {
@@ -42,149 +43,178 @@ body {
   border: 2px solid #f2ba49;
   border-radius: 18px;
   overflow: hidden;
-  background: linear-gradient(180deg, #282130 0%, #161321 50%, #120f1a 100%);
+  background: #0a0812;
 }
 
 .scene {
   position: absolute;
   inset: 0;
+  background: #0a0812;
 }
 
-.splash {
+/* Scene stack: see `mobileAssetManifest` z-index map (bg5→bg0, fg1→fg2); overlay stays above at 20. */
+.scene-hud-bg,
+.overlay-hud-bg {
   position: absolute;
-  left: 50%;
-  top: 4%;
-  transform: translateX(-50%);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.audience-layer {
-  position: absolute;
-  inset: 13% 0 auto;
-  height: 23%;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.1) 6px,
-    rgba(0, 0, 0, 0.15) 7px,
-    rgba(0, 0, 0, 0.15) 12px
-  );
+.scene-layer {
+  user-select: none;
+  overflow: hidden;
 }
 
-.ring-layer {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 16%;
-  height: 45%;
-  border: 3px solid #f6f0da;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(127, 165, 214, 0.14), rgba(225, 120, 90, 0.17));
+.scene-layer img {
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
 }
 
-.chart-panel {
-  position: absolute;
-  left: 7%;
-  right: 7%;
-  top: 30%;
-  border: 1px solid #b9a1ff;
-  border-radius: 8px;
-  text-align: center;
-  padding: 0.35rem;
-  font-size: 0.72rem;
-  color: #c7bdf1;
+.scene-fighter {
+  max-width: none;
+  image-rendering: auto;
+  outline: none;
 }
 
-.fighter {
-  position: absolute;
-  width: 26%;
-  height: 24%;
-  bottom: 23%;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+.scene-fighter:focus,
+.scene-fighter:focus-visible {
+  outline: none;
+}
+
+.scene-chart-band {
+  background: #000;
+  overflow: hidden;
+}
+
+.btc-candle-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.splash-sequence {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 300ms ease;
-  text-transform: uppercase;
-  font-weight: 700;
-  gap: 0.25rem;
 }
 
-.fighter small {
-  font-size: 0.62rem;
-  color: #d8d2c0;
-  text-transform: none;
-  font-weight: 400;
-}
-
-.fighter.satoshi {
-  left: 16%;
-  background: rgba(56, 172, 102, 0.24);
-}
-
-.fighter.lizard {
-  right: 16%;
-  background: rgba(170, 81, 81, 0.31);
-}
-
-.fighter.aligned.satoshi {
-  left: 30%;
-}
-
-.fighter.aligned.lizard {
-  right: 30%;
-}
-
-.fighter.attacking {
-  transform: translateY(-10px) scale(1.05);
-}
-
-.fighter.defending {
-  transform: scale(0.96);
-}
-
-.fighter.fall {
-  transform: rotate(75deg) translateY(18px);
-}
-
-.fighter.knockedDown {
-  transform: rotate(90deg) translateY(42px);
-}
-
-.fighter.rise {
-  transform: rotate(25deg) translateY(10px);
+.splash-sequence-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  padding: 1rem 0.8rem;
+  padding: 0.65rem 0.5rem 0.4rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  z-index: 20;
 }
 
 .overlay-row {
   display: flex;
   justify-content: space-between;
-  gap: 0.8rem;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.overlay-column {
+  flex: 1;
+  min-width: 0;
+  max-width: 38%;
+}
+
+.overlay-column-start {
+  text-align: left;
+}
+
+.overlay-column-end {
+  text-align: right;
 }
 
 .overlay-label {
-  margin: 0 0 0.2rem;
-  color: #8bc3f2;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.67rem;
+  margin: 0 0 0.1rem;
+  color: #ffffff;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: clamp(0.55rem, 2.2vw, 0.72rem);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
 }
 
-.subtle {
-  color: #b5af9f;
-  font-size: 0.67rem;
+.feed-glyph {
+  font-size: 0.65em;
+}
+
+.overlay-price {
+  margin: 0 0 0.15rem;
+  font-size: clamp(0.75rem, 3vw, 0.95rem);
+  font-weight: 600;
+}
+
+.volume-bar-track {
+  width: 100%;
+  max-width: 140px;
+  height: 4px;
+  background: rgba(128, 128, 128, 0.35);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.volume-bar-track-end {
+  margin-left: auto;
+}
+
+.volume-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.28s ease;
+}
+
+.damage-bar-track {
+  height: 8px;
+  margin-top: 0.2rem;
+}
+
+.damage-bar-fill {
+  background: #ffeb3b;
+}
+
+.overlay-mode {
+  margin: 0.15rem 0 0.1rem;
+  font-size: clamp(0.55rem, 2.2vw, 0.72rem);
+  font-weight: 600;
+}
+
+.overlay-mode-offense {
+  color: #4caf50;
+}
+
+.overlay-mode-defense {
+  color: #ffc107;
+}
+
+.overlay-ko-count {
+  margin: 0.1rem 0 0;
+  font-size: clamp(0.65rem, 2.5vw, 0.85rem);
+  font-weight: 700;
+  color: #ffeb3b;
 }
 
 .text-right {
@@ -197,13 +227,14 @@ body {
   border-radius: 10px;
   background: rgba(21, 24, 41, 0.75);
   color: inherit;
-  min-width: 130px;
-  padding: 0.5rem 0.7rem;
+  min-width: 100px;
+  padding: 0.35rem 0.45rem;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
   align-items: center;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .time-button:hover {
@@ -214,15 +245,15 @@ body {
   color: #ffffff;
 }
 
-progress {
-  width: 140px;
-  height: 0.7rem;
+.subtle {
+  color: #b5af9f;
+  font-size: 0.62rem;
 }
 
 .disclaimer {
   margin: 0;
   text-align: center;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   color: #d0c7ad;
   opacity: 0.85;
 }

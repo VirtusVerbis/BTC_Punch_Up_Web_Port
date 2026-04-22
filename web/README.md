@@ -17,7 +17,6 @@ Web port of BTC Punch Up with a client-heavy architecture: the browser consumes 
 
 Copy `.env.example` to `.env` and adjust values as needed.
 
-- `VITE_USE_MOCK_DATA=true` runs deterministic mock market data.
 - `VITE_BINANCE_WS_URL` Binance websocket endpoint.
 - `VITE_COINBASE_WS_URL` Coinbase websocket endpoint.
 - `VITE_MEMPOOL_TIP_URL` Mempool block tip endpoint.

@@ -10,7 +10,6 @@
 ## Immediate response checklist
 
 - Confirm service status and affected browsers/devices.
-- Switch to mock mode when needed (`VITE_USE_MOCK_DATA=true`) for continuity.
 - Capture logs and reproduction details.
 - Validate CSP and security headers from deployed edge.
 - Roll back to latest healthy deployment if regression was introduced.
@@ -26,5 +25,5 @@
 
 - Affected scope: browsers/devices/feeds
 - User impact: degraded visuals, stale data, or unavailable feed
-- Mitigation in place: mock fallback, rollback, patch
+- Mitigation in place: rollback, upstream status, patch
 - ETA for recovery
