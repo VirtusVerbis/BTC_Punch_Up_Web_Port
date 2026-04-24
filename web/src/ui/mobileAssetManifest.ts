@@ -36,10 +36,37 @@ export const mobileAssetManifest = {
     objectFit: 'cover' as const,
   },
 
+  buySigns: {
+    zIndex: 3,
+    left: 0.14,
+    top: 0.06,
+    width: 0.72,
+    height: 0.16,
+    objectFit: 'contain' as const,
+  },
+
+  flash: {
+    zIndex: 4,
+    left: 0,
+    top: 0,
+    width: 1,
+    height: 1,
+    objectFit: 'cover' as const,
+  },
+
+  meme: {
+    zIndex: 5,
+    left: 0.08,
+    top: 0.06,
+    width: 0.84,
+    height: 0.24,
+    objectFit: 'contain' as const,
+  },
+
   chartBand: {
     zIndex: 6,
-    left: 0.04,
-    width: 0.92,
+    left: 0,
+    width: 1,
     top: BG2_CHART_TOP_OFFSET_FRACTION,
     height: BG2_CHART_HEIGHT_FRACTION,
   },
@@ -69,5 +96,14 @@ export const mobileAssetManifest = {
     anchorY: SATOSHI_Y_POSITION,
     alignDeltaX: 0.08,
     scale: SATOSHI_SCALE,
+  },
+
+  fg3: {
+    zIndex: 10,
+    left: 0.18,
+    top: 0.58,
+    width: 0.64,
+    height: 0.2,
+    objectFit: 'contain' as const,
   },
 }

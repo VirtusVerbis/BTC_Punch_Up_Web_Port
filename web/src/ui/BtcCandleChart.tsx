@@ -8,6 +8,10 @@ const LABEL = 'rgba(255,255,255,0.8)'
 const PADDING = 4
 const MIN_CANDLE_WIDTH = 2
 const WICK = 1
+const AXIS_FONT_PX = 38.4
+const X_AXIS_HEIGHT = 60
+const NUM_Y_TICKS = 5
+const NUM_X_TICKS = 5
 
 const formatPriceShort = (price: number): string => {
   if (price >= 1_000_000) {
@@ -19,6 +23,13 @@ const formatPriceShort = (price: number): string => {
     return v === Math.trunc(v) ? `${v.toFixed(0)}K` : `${v.toFixed(1)}K`
   }
   return `${Math.round(price)}`
+}
+
+const formatTimeLabel = (openTimeMs: number): string => {
+  const date = new Date(openTimeMs)
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }
 
 interface BtcCandleChartProps {
@@ -46,34 +57,21 @@ export const BtcCandleChart = ({ candles, showAxisLabels = true }: BtcCandleChar
     ctx.fillStyle = CHART_BG
     ctx.fillRect(0, 0, w, h)
 
-    if (candles.length === 0) {
-      ctx.fillStyle = LABEL
-      ctx.font = '12px system-ui'
-      ctx.fillText('No candle data', PADDING, 16)
-      return
-    }
+    if (candles.length === 0) return
 
-    const lows = candles.map((c) => c.low).sort((a, b) => a - b)
-    const highs = candles.map((c) => c.high).sort((a, b) => a - b)
-    const closes = candles.map((c) => c.close)
-    const loIdx = Math.max(0, Math.floor(lows.length * 0.02))
-    const hiIdx = Math.min(highs.length - 1, Math.ceil(highs.length * 0.98) - 1)
-    const qLow = lows[loIdx] ?? Math.min(...candles.map((c) => c.low))
-    const qHigh = highs[hiIdx] ?? Math.max(...candles.map((c) => c.high))
-    const closeMin = Math.min(...closes)
-    const closeMax = Math.max(...closes)
-    const priceMin = Math.min(qLow, closeMin)
-    const priceMax = Math.max(qHigh, closeMax)
+    const lows = candles.map((c) => c.low)
+    const highs = candles.map((c) => c.high)
+    const priceMin = Math.min(...lows)
+    const priceMax = Math.max(...highs)
     const priceRange = Math.max(1, priceMax - priceMin)
-    const pad = Math.max(priceRange * 0.04, priceMax * 0.0005)
+    const pad = priceRange * 0.02
     const yMin = priceMin - pad
     const yMax = priceMax + pad
     const yRange = Math.max(1, yMax - yMin)
 
-    const axisW = showAxisLabels ? 40 : 0
-    const axisH = showAxisLabels ? 20 : 0
-    const chartLeft = PADDING + axisW
-    const chartRight = w - PADDING
+    const axisH = showAxisLabels ? X_AXIS_HEIGHT : 0
+    const chartLeft = 0
+    const chartRight = w
     const chartTop = PADDING
     const chartBottom = h - PADDING - axisH
     const chartW = Math.max(1, chartRight - chartLeft)
@@ -88,10 +86,8 @@ export const BtcCandleChart = ({ candles, showAxisLabels = true }: BtcCandleChar
       const y = (v: number) => chartBottom - ((v - yMin) / yRange) * chartH
       const openY = y(c.open)
       const closeY = y(c.close)
-      const plotHigh = Math.min(Math.max(c.high, yMin), yMax)
-      const plotLow = Math.max(Math.min(c.low, yMax), yMin)
-      const highY = y(plotHigh)
-      const lowY = y(plotLow)
+      const highY = y(c.high)
+      const lowY = y(c.low)
       const bodyTop = Math.min(openY, closeY)
       const bodyBottom = Math.max(openY, closeY)
       const bodyHeight = Math.max(1, bodyBottom - bodyTop)
@@ -109,12 +105,38 @@ export const BtcCandleChart = ({ candles, showAxisLabels = true }: BtcCandleChar
     })
 
     if (showAxisLabels) {
+      const yLabelInset = AXIS_FONT_PX * 0.55
+      const yLabelTop = Math.min(chartBottom, chartTop + yLabelInset)
+      const yLabelBottom = Math.max(yLabelTop, chartBottom - yLabelInset)
+
       ctx.fillStyle = LABEL
-      ctx.font = '10px system-ui'
-      const ticks = 5
-      for (let i = 0; i < ticks; i++) {
-        const price = yMax - (i * (yMax - yMin)) / (ticks - 1)
-        ctx.fillText(`$${formatPriceShort(price)}`, 2, chartTop + (i * chartH) / (ticks - 1) + 8)
+      ctx.font = `${AXIS_FONT_PX}px system-ui`
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'middle'
+      for (let i = 0; i < NUM_Y_TICKS; i++) {
+        const price = yMax - (i * (yMax - yMin)) / (NUM_Y_TICKS - 1)
+        const yPos = yLabelTop + (i * (yLabelBottom - yLabelTop)) / (NUM_Y_TICKS - 1)
+        ctx.fillText(`$${formatPriceShort(price)}`, w - 2, yPos)
+      }
+
+      if (candles.length >= NUM_X_TICKS) {
+        const indexSet = new Set<number>()
+        for (let i = 0; i < NUM_X_TICKS; i++) {
+          indexSet.add(Math.floor((i * (candles.length - 1)) / (NUM_X_TICKS - 1)))
+        }
+        const indices = [...indexSet]
+        ctx.textBaseline = 'top'
+        indices.forEach((idx, labelIdx) => {
+          const xPos = chartLeft + (idx / (candles.length - 1)) * chartW
+          if (labelIdx === 0) {
+            ctx.textAlign = 'left'
+          } else if (labelIdx === indices.length - 1) {
+            ctx.textAlign = 'right'
+          } else {
+            ctx.textAlign = 'center'
+          }
+          ctx.fillText(formatTimeLabel(candles[idx]?.openTime ?? 0), xPos, chartBottom + 4)
+        })
       }
     }
   }, [candles, showAxisLabels])

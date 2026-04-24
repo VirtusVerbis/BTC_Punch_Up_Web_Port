@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { REFERENCE_HEIGHT, REFERENCE_WIDTH } from './config/constants'
 import { fetchBinanceBtc1mKlines, type Candle } from './data/candles'
 import { BlockHeightService, type BlockState } from './data/blockHeight'
 import { MarketDataService, type MarketFeedUpdate } from './data/marketData'
@@ -8,7 +9,11 @@ import { Overlay } from './ui/Overlay'
 import { SplashSequence } from './ui/SplashSequence'
 import { Stage } from './ui/Stage'
 import { useAudienceSubFrame } from './ui/useAudienceSubFrame'
+import { useBg2MemeState } from './ui/useBg2MemeState'
 import { useBg2ChartVisible } from './ui/useBg2ChartVisibility'
+import { useBg3FlashState } from './ui/useBg3FlashState'
+import { useBg4SignState } from './ui/useBg4SignState'
+import { useFg3CatState } from './ui/useFg3CatState'
 import { useRingRotation } from './ui/useRingRotation'
 
 const emptyMarket = (): MarketFeedUpdate['market'] => ({
@@ -44,6 +49,7 @@ const initialBlockState: BlockState = {
 }
 
 function App() {
+  const appShellRef = useRef<HTMLElement | null>(null)
   const [splashDone, setSplashDone] = useState(false)
   const onSplashDone = useCallback(() => setSplashDone(true), [])
 
@@ -69,6 +75,16 @@ function App() {
   const ringIndex = useRingRotation(koLockedUntil)
   const audienceSubFrame = useAudienceSubFrame()
   const bg2Visible = useBg2ChartVisible()
+  const bg2Meme = useBg2MemeState(bg2Visible)
+  const bg4 = useBg4SignState({
+    sceneWidthPx: REFERENCE_WIDTH,
+    sceneHeightPx: REFERENCE_HEIGHT,
+    ringIndex,
+    bg2Visible,
+    koKnockedDown: satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown',
+  })
+  const bg3 = useBg3FlashState()
+  const fg3 = useFg3CatState()
 
   const marketService = useMemo(
     () =>
@@ -100,16 +116,37 @@ function App() {
   }, [])
 
   const showCandleChart = splashDone && bg2Visible
+  const showBg2Meme = splashDone
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H0', location: 'App.tsx:114', message: 'app mounted for debug session', data: { splashDone, bg2Visible }, timestamp: Date.now() }) }).catch(() => {})
+    // #endregion
+  }, [splashDone, bg2Visible])
 
   return (
-    <main className="app-shell">
+    <main ref={appShellRef} className="app-shell">
       {!splashDone ? <SplashSequence onDone={onSplashDone} /> : null}
-      <Stage>
+      <Stage shellRef={appShellRef}>
         <FightScene
           satoshi={satoshi}
           lizard={lizard}
           alignCharacters={alignCharacters}
           showCandleChart={showCandleChart}
+          showBg2Meme={showBg2Meme}
+          bg2MemeFrame={bg2Meme.frame}
+          showBg2Neo={bg2Meme.showNeo}
+          bg3FlashFrame={bg3.flashFrame}
+          showBg3AudienceFlash={bg3.showAudienceFlash}
+          bg4SignSpawns={bg4.signSpawns}
+          bg4SignSizePx={bg4.signSizePx}
+          showFg3Cat={fg3.active}
+          fg3Direction={fg3.direction}
+          fg3Frame={fg3.frame}
+          fg3Left={fg3.left}
+          fg3Top={fg3.top}
+          fg3Width={fg3.width}
+          fg3Height={fg3.height}
           candles={candles}
           ringIndex={ringIndex}
           audienceSubFrame={audienceSubFrame}

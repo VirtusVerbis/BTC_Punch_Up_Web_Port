@@ -126,3 +126,27 @@ export const audienceFile = (ringIndex: number, subFrame: number): string =>
   `audience_${subFrame}_r${ringIndex}.png`
 
 export const ringFile = (ringIndex: number): string => `ring_${ringIndex}.png`
+
+export const bg4BuySignFile = (frame: number): string => {
+  const f = Math.max(0, Math.min(4, frame))
+  return `buy_btc_sign_${f}.png`
+}
+
+export const bg3FlashFile = (frame: number): string => {
+  const f = Math.max(0, Math.min(3, frame))
+  return `flash_${f}.png`
+}
+
+export const bg3FlashAudienceFile = (): string => 'flash_audience_0.png'
+
+export const bg2MemeFile = (frame: number): string => {
+  const f = Math.max(1, Math.min(40, frame))
+  return `dancing_chika_brr_${String(f).padStart(3, '0')}.png`
+}
+
+export const bg2NeoFile = (): string => 'neo.png'
+
+export const fg3CatFile = (direction: 'left' | 'right', frame: number): string => {
+  const f = frame % 2 === 0 ? 1 : 2
+  return `e_cat_${direction}_${f}.png`
+}

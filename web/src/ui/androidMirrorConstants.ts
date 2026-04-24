@@ -14,9 +14,36 @@ export const RING_ROTATION_FRAME_DELAY_MS = 8000
 
 export const BG2_SHOW_INTERVAL_MS = 3 * 60 * 1000
 export const BG2_VISIBLE_DURATION_MS = 30_000
-export const BG2_CHART_TOP_OFFSET_FRACTION = 0.15
-/** Target: chart bottom aligns around screen midpoint (0.15 + 0.35 = 0.50). */
-export const BG2_CHART_HEIGHT_FRACTION = 0.35
+export const BG2_CHART_TOP_OFFSET_FRACTION = 0.13
+/** Android parity: chart occupies ~49.5% screen height from 15% top offset. */
+export const BG2_CHART_HEIGHT_FRACTION = 0.495
+export const BG2_MEME_FRAME_DELAY_MS = 120
+export const BG2_MEME_CYCLE_FRAMES = 40
+export const BG2_NEO_TOGGLE_INTERVAL_MS = 2 * BG2_SHOW_INTERVAL_MS
+
+export const BG4_SIGN_FRAME_DELAY_MS = 600
+export const BG4_SIGN_SPAWN_INTERVAL_MS = 60_000
+export const BG4_SIGN_SIZE_DP = 82
+export const BG4_SIGN_MARGIN_X_FRACTION = 0.05
+export const BG4_SIGN_ROW_Y_FRACTIONS = [0.2, 0.32, 0.42] as const
+export const BG4_SIGN_FRAMES = 5
+
+export const BG3_FLASH_BURST_INTERVAL_MS = 12_000
+export const BG3_FLASH_FRAME_DELAY_MS = 120
+export const BG3_FLASH_FRAME_COUNT = 4
+
+/** Android parity: one cat at a time, spawn roughly every 15 minutes. */
+export const FG3_CAT_SPAWN_INTERVAL_MS = 15 * 60 * 1000
+/** Android parity: cat movement step applied on each animation tick. */
+export const FG3_CAT_SPEED_PX_PER_TICK = 8
+/** Android parity: spawn lane near bottom of scene (fraction of scene height). */
+export const FG3_CAT_SPAWN_Y_FACTOR = 0.990
+/** Android parity source size in dp (`CAT_SIZE_DP`). */
+export const FG3_CAT_SIZE_DP = 64
+/** Extra margin beyond scene bounds before spawn/despawn. */
+export const FG3_CAT_OFFSCREEN_MARGIN_PX = 50
+/** Cat walk alternates two frames using the same animation cadence. */
+export const FG3_CAT_FRAME_DELAY_MS = ANIMATION_FRAME_DELAY_MS
 
 /** Android `Sprite`: boxers use 128dp art × `sizeScale` (see `Sprite` composable `baseSizeDp`). */
 export const FIGHTER_BASE_ART_DP = 128

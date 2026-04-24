@@ -9,9 +9,20 @@ import {
   FIGHTER_WEB_DISPLAY_FACTOR,
 } from './androidMirrorConstants'
 import { BtcCandleChart } from './BtcCandleChart'
-import { audienceFile, fighterSpriteUrl, ringFile } from './fighterSprite'
+import {
+  audienceFile,
+  bg2MemeFile,
+  bg2NeoFile,
+  bg3FlashAudienceFile,
+  bg3FlashFile,
+  bg4BuySignFile,
+  fg3CatFile,
+  fighterSpriteUrl,
+  ringFile,
+} from './fighterSprite'
 import { mobileAssetManifest } from './mobileAssetManifest'
 import { resolveMobileAssetUrl } from './mobileAssetUrls'
+import type { Bg4SignSpawn } from './useBg4SignState'
 import { useBoxerBobbing } from './useBoxerBobbing'
 
 interface FightSceneProps {
@@ -19,6 +30,20 @@ interface FightSceneProps {
   lizard: FighterState
   alignCharacters: boolean
   showCandleChart: boolean
+  showBg2Meme: boolean
+  bg2MemeFrame: number
+  showBg2Neo: boolean
+  bg3FlashFrame: number | null
+  showBg3AudienceFlash: boolean
+  bg4SignSpawns: Bg4SignSpawn[]
+  bg4SignSizePx: number
+  showFg3Cat: boolean
+  fg3Direction: 'left' | 'right'
+  fg3Frame: number
+  fg3Left: number
+  fg3Top: number
+  fg3Width: number
+  fg3Height: number
   candles: Candle[]
   ringIndex: number
   audienceSubFrame: number
@@ -68,11 +93,31 @@ const fighterStyle = (
   }
 }
 
+const logLayerAsset = (layer: string, event: 'load' | 'error', src: string) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H6', location: 'FightScene.tsx:74', message: 'layer asset event', data: { layer, event, src }, timestamp: Date.now() }) }).catch(() => {})
+  // #endregion
+}
+
 export const FightScene = ({
   satoshi,
   lizard,
   alignCharacters,
   showCandleChart,
+  showBg2Meme,
+  bg2MemeFrame,
+  showBg2Neo,
+  bg3FlashFrame,
+  showBg3AudienceFlash,
+  bg4SignSpawns,
+  bg4SignSizePx,
+  showFg3Cat,
+  fg3Direction,
+  fg3Frame,
+  fg3Left,
+  fg3Top,
+  fg3Width,
+  fg3Height,
   candles,
   ringIndex,
   audienceSubFrame,
@@ -109,7 +154,23 @@ export const FightScene = ({
   /** Audience should remain full-frame like Android; no conditional vertical shift. */
   const audienceRect = m.audience
   const audienceSrc = resolveMobileAssetUrl(audienceFile(ringIndex, audienceSubFrame))
+  const bg3FlashSrc = bg3FlashFrame === null ? null : resolveMobileAssetUrl(bg3FlashFile(bg3FlashFrame))
+  const bg3AudienceFlashSrc = showBg3AudienceFlash ? resolveMobileAssetUrl(bg3FlashAudienceFile()) : null
+  const bg2MemeSrc = resolveMobileAssetUrl(showBg2Neo ? bg2NeoFile() : bg2MemeFile(bg2MemeFrame))
   const ringSrc = resolveMobileAssetUrl(ringFile(ringIndex))
+  const fg3CatSrc = resolveMobileAssetUrl(fg3CatFile(fg3Direction, fg3Frame))
+  const bg4SizeW = sceneWidthPx > 0 ? bg4SignSizePx / sceneWidthPx : 0
+  const bg4SizeH = sceneHeightPx > 0 ? bg4SignSizePx / sceneHeightPx : 0
+  const fg3Style: CSSProperties = {
+    position: 'absolute',
+    zIndex: m.fg3.zIndex,
+    left: `${fg3Left * 100}%`,
+    top: `${fg3Top * 100}%`,
+    width: `${fg3Width * 100}%`,
+    height: `${fg3Height * 100}%`,
+    objectFit: m.fg3.objectFit,
+    pointerEvents: 'none',
+  }
 
   const satoshiSrc = fighterSpriteUrl(
     'satoshi',
@@ -123,6 +184,37 @@ export const FightScene = ({
 
   const hudBg = m.hudBackground ? resolveMobileAssetUrl(m.hudBackground) : null
 
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H5', location: 'FightScene.tsx:173', message: 'layer render gates and assets', data: { showBg2Meme, showCandleChart, bg3FlashFrame, showBg3AudienceFlash, bg4SignCount: bg4SignSpawns.length, showFg3Cat, fg3Direction, fg3Frame, fg3Left, fg3Top, fg3Width, fg3Height, bg3FlashSrc, bg3AudienceFlashSrc, bg2MemeSrc, fg3CatSrc, z: { bg4: m.buySigns.zIndex, bg3: m.flash.zIndex, bg2: m.meme.zIndex, bg1: m.chartBand.zIndex, bg0: m.ring.zIndex, fg1: m.lizard.zIndex, fg2: m.satoshi.zIndex, fg3: m.fg3.zIndex } }, timestamp: Date.now() }) }).catch(() => {})
+    // #endregion
+  }, [
+    showBg2Meme,
+    showCandleChart,
+    bg3FlashFrame,
+    showBg3AudienceFlash,
+    bg4SignSpawns.length,
+    showFg3Cat,
+    fg3Direction,
+    fg3Frame,
+    fg3Left,
+    fg3Top,
+    fg3Width,
+    fg3Height,
+    bg3FlashSrc,
+    bg3AudienceFlashSrc,
+    bg2MemeSrc,
+    fg3CatSrc,
+    m.buySigns.zIndex,
+    m.flash.zIndex,
+    m.meme.zIndex,
+    m.chartBand.zIndex,
+    m.ring.zIndex,
+    m.lizard.zIndex,
+    m.satoshi.zIndex,
+    m.fg3.zIndex,
+  ])
+
   return (
     <div className="scene" ref={sceneRef}>
       {hudBg ? <img src={hudBg} alt="" className="scene-hud-bg" /> : null}
@@ -134,6 +226,70 @@ export const FightScene = ({
         style={{ ...boxStyle(audienceRect), objectFit: audienceRect.objectFit }}
         draggable={false}
       />
+
+      {showCandleChart
+        ? null
+        : bg4SignSpawns.map((sign) => {
+            const bg4Src = resolveMobileAssetUrl(bg4BuySignFile(sign.frameIndex))
+            const bg4Style: CSSProperties = {
+              position: 'absolute',
+              zIndex: m.buySigns.zIndex,
+              left: `${((sign.xPx - bg4SignSizePx / 2) / REFERENCE_WIDTH) * 100}%`,
+              top: `${((sign.yPx - bg4SignSizePx / 2) / REFERENCE_HEIGHT) * 100}%`,
+              width: `${bg4SizeW * 100}%`,
+              height: `${bg4SizeH * 100}%`,
+              objectFit: 'contain',
+              pointerEvents: 'none',
+            }
+            return (
+              <img
+                key={sign.id}
+                src={bg4Src}
+                alt=""
+                className="scene-layer scene-bg4-sign"
+                style={bg4Style}
+                draggable={false}
+                onLoad={() => logLayerAsset('scene-bg4-sign', 'load', bg4Src)}
+                onError={() => logLayerAsset('scene-bg4-sign', 'error', bg4Src)}
+              />
+            )
+          })}
+
+      {bg3FlashSrc ? (
+        <img
+          src={bg3FlashSrc}
+          alt=""
+          className="scene-layer scene-bg3-flash"
+          style={{ ...boxStyle(m.flash), objectFit: m.flash.objectFit }}
+          draggable={false}
+          onLoad={() => logLayerAsset('scene-bg3-flash', 'load', bg3FlashSrc)}
+          onError={() => logLayerAsset('scene-bg3-flash', 'error', bg3FlashSrc)}
+        />
+      ) : null}
+
+      {bg3AudienceFlashSrc ? (
+        <img
+          src={bg3AudienceFlashSrc}
+          alt=""
+          className="scene-layer scene-bg3-flash-audience"
+          style={{ ...boxStyle(m.flash), objectFit: m.flash.objectFit }}
+          draggable={false}
+          onLoad={() => logLayerAsset('scene-bg3-flash-audience', 'load', bg3AudienceFlashSrc)}
+          onError={() => logLayerAsset('scene-bg3-flash-audience', 'error', bg3AudienceFlashSrc)}
+        />
+      ) : null}
+
+      {showBg2Meme ? (
+        <img
+          src={bg2MemeSrc}
+          alt=""
+          className="scene-layer scene-bg2-meme"
+          style={{ ...boxStyle(m.meme), objectFit: m.meme.objectFit }}
+          draggable={false}
+          onLoad={() => logLayerAsset('scene-bg2-meme', 'load', bg2MemeSrc)}
+          onError={() => logLayerAsset('scene-bg2-meme', 'error', bg2MemeSrc)}
+        />
+      ) : null}
 
       {showCandleChart ? (
         <div className="scene-layer scene-chart-band" style={boxStyle(m.chartBand)}>
@@ -173,6 +329,18 @@ export const FightScene = ({
         draggable={false}
         tabIndex={-1}
       />
+
+      {showFg3Cat ? (
+        <img
+          src={fg3CatSrc}
+          alt=""
+          className="scene-layer scene-fg3-cat"
+          style={fg3Style}
+          draggable={false}
+          onLoad={() => logLayerAsset('scene-fg3-cat', 'load', fg3CatSrc)}
+          onError={() => logLayerAsset('scene-fg3-cat', 'error', fg3CatSrc)}
+        />
+      ) : null}
     </div>
   )
 }

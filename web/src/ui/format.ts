@@ -16,5 +16,5 @@ export const formatPrice = (value: number): string =>
  */
 export const formatExchangePriceLabel = (price: number): string => {
   if (!Number.isFinite(price) || price <= 0) return 'Unavailable'
-  return price.toLocaleString(undefined, { maximumFractionDigits: 2 })
+  return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
