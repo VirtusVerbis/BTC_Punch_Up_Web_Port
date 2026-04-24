@@ -92,7 +92,11 @@ function App() {
     bg2Visible,
     koKnockedDown: satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown',
   })
-  const bg3 = useBg3FlashState()
+  const bg3 = useBg3FlashState({
+    flashActive: satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown',
+    sceneWidthPx: REFERENCE_WIDTH,
+    sceneHeightPx: REFERENCE_HEIGHT,
+  })
   const fg3 = useFg3CatState()
 
   const marketService = useMemo(
@@ -146,8 +150,9 @@ function App() {
               showCandleChart={showCandleChart}
               showBg2Meme={showBg2Meme}
               bg2ActiveMeme={bg2Meme.activeMeme}
-              bg3FlashFrame={bg3.flashFrame}
-              showBg3AudienceFlash={bg3.showAudienceFlash}
+              bg3FlashSpawns={bg3.flashSpawns}
+              bg3AudienceFlashUntilMs={bg3.audienceFlashUntilMs}
+              bg3FlashSizePx={bg3.flashSizePx}
               bg4SignSpawns={bg4.signSpawns}
               bg4SignSizePx={bg4.signSizePx}
               showFg3Cat={fg3.active}

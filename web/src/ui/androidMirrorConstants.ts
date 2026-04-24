@@ -63,12 +63,18 @@ export const BG4_SIGN_FRAME_DELAY_MS = 600
 export const BG4_SIGN_SPAWN_INTERVAL_MS = 60_000
 export const BG4_SIGN_SIZE_DP = 82
 export const BG4_SIGN_MARGIN_X_FRACTION = 0.05
-export const BG4_SIGN_ROW_Y_FRACTIONS = [0.25, 0.37, 0.50] as const
+export const BG4_SIGN_ROW_Y_FRACTIONS = [0.25, 0.37, 0.49] as const
 export const BG4_SIGN_FRAMES = 5
 
-export const BG3_FLASH_BURST_INTERVAL_MS = 12_000
-export const BG3_FLASH_FRAME_DELAY_MS = 120
+export const BG3_FLASH_FRAME_DELAY_MS = 80
 export const BG3_FLASH_FRAME_COUNT = 4
+export const BG3_FLASH_MAX_Y_FRACTION = 0.6
+export const BG3_FLASH_SPAWN_COUNT_DEFAULT = 20
+export const BG3_FLASH_MAX_SPAWN_TOGETHER = 2
+export const BG3_FLASH_AUDIENCE_DISPLAY_MS = 150
+export const BG3_FLASH_SPAWN_WAVE_DELAY_MS = 550
+export const BG3_FLASH_AUDIENCE_MIN_INTERVAL_MS = 334
+export const BG3_FLASH_SIZE_DP = 64
 
 /** Android parity: one cat at a time, spawn roughly every 15 minutes. */
 export const FG3_CAT_SPAWN_INTERVAL_MS = 15 * 60 * 1000

@@ -38,6 +38,7 @@ import {
 } from './fighterSprite'
 import { mobileAssetManifest } from './mobileAssetManifest'
 import { resolveMobileAssetUrl } from './mobileAssetUrls'
+import type { Bg3FlashSpawn } from './useBg3FlashState'
 import type { Bg4SignSpawn } from './useBg4SignState'
 import type { Bg2ActiveMeme } from './useBg2MemeState'
 import { useBoxerBobbing } from './useBoxerBobbing'
@@ -49,8 +50,9 @@ interface FightSceneProps {
   showCandleChart: boolean
   showBg2Meme: boolean
   bg2ActiveMeme: Bg2ActiveMeme | null
-  bg3FlashFrame: number | null
-  showBg3AudienceFlash: boolean
+  bg3FlashSpawns: Bg3FlashSpawn[]
+  bg3AudienceFlashUntilMs: number
+  bg3FlashSizePx: number
   bg4SignSpawns: Bg4SignSpawn[]
   bg4SignSizePx: number
   showFg3Cat: boolean
@@ -122,8 +124,9 @@ export const FightScene = ({
   showCandleChart,
   showBg2Meme,
   bg2ActiveMeme,
-  bg3FlashFrame,
-  showBg3AudienceFlash,
+  bg3FlashSpawns,
+  bg3AudienceFlashUntilMs,
+  bg3FlashSizePx,
   bg4SignSpawns,
   bg4SignSizePx,
   showFg3Cat,
@@ -169,8 +172,7 @@ export const FightScene = ({
   /** Audience should remain full-frame like Android; no conditional vertical shift. */
   const audienceRect = m.audience
   const audienceSrc = resolveMobileAssetUrl(audienceFile(ringIndex, audienceSubFrame))
-  const bg3FlashSrc = bg3FlashFrame === null ? null : resolveMobileAssetUrl(bg3FlashFile(bg3FlashFrame))
-  const bg3AudienceFlashSrc = showBg3AudienceFlash ? resolveMobileAssetUrl(bg3FlashAudienceFile()) : null
+  const bg3AudienceFlashSrc = nowMs < bg3AudienceFlashUntilMs ? resolveMobileAssetUrl(bg3FlashAudienceFile()) : null
   const bg2MemeSrc = (() => {
     if (!bg2ActiveMeme) return null
     if (bg2ActiveMeme.sequenceId === 'dcb') return resolveMobileAssetUrl(bg2MemeFile(bg2ActiveMeme.frameIndex + 1))
@@ -238,13 +240,14 @@ export const FightScene = ({
 
   useEffect(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H5', location: 'FightScene.tsx:173', message: 'layer render gates and assets', data: { showBg2Meme, showCandleChart, bg3FlashFrame, showBg3AudienceFlash, bg4SignCount: bg4SignSpawns.length, showFg3Cat, fg3Direction, fg3Frame, fg3Left, fg3Top, fg3Width, fg3Height, bg3FlashSrc, bg3AudienceFlashSrc, bg2MemeSrc, fg3CatSrc, z: { bg4: m.buySigns.zIndex, bg3: m.flash.zIndex, bg2: m.meme.zIndex, bg1: m.chartBand.zIndex, bg0: m.ring.zIndex, fg1: m.lizard.zIndex, fg2: m.satoshi.zIndex, fg3: m.fg3.zIndex } }, timestamp: Date.now() }) }).catch(() => {})
+    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H5', location: 'FightScene.tsx:173', message: 'layer render gates and assets', data: { showBg2Meme, showCandleChart, bg3FlashSpawnCount: bg3FlashSpawns.length, showBg3AudienceFlash: nowMs < bg3AudienceFlashUntilMs, bg4SignCount: bg4SignSpawns.length, showFg3Cat, fg3Direction, fg3Frame, fg3Left, fg3Top, fg3Width, fg3Height, bg3AudienceFlashSrc, bg2MemeSrc, fg3CatSrc, z: { bg4: m.buySigns.zIndex, bg3: m.flash.zIndex, bg2: m.meme.zIndex, bg1: m.chartBand.zIndex, bg0: m.ring.zIndex, fg1: m.lizard.zIndex, fg2: m.satoshi.zIndex, fg3: m.fg3.zIndex } }, timestamp: Date.now() }) }).catch(() => {})
     // #endregion
   }, [
     showBg2Meme,
     showCandleChart,
-    bg3FlashFrame,
-    showBg3AudienceFlash,
+    bg3FlashSpawns.length,
+    nowMs,
+    bg3AudienceFlashUntilMs,
     bg4SignSpawns.length,
     showFg3Cat,
     fg3Direction,
@@ -253,7 +256,6 @@ export const FightScene = ({
     fg3Top,
     fg3Width,
     fg3Height,
-    bg3FlashSrc,
     bg3AudienceFlashSrc,
     bg2MemeSrc,
     fg3CatSrc,
@@ -307,17 +309,31 @@ export const FightScene = ({
             )
           })}
 
-      {bg3FlashSrc ? (
-        <img
-          src={bg3FlashSrc}
-          alt=""
-          className="scene-layer scene-bg3-flash"
-          style={{ ...boxStyle(m.flash), objectFit: m.flash.objectFit }}
-          draggable={false}
-          onLoad={() => logLayerAsset('scene-bg3-flash', 'load', bg3FlashSrc)}
-          onError={() => logLayerAsset('scene-bg3-flash', 'error', bg3FlashSrc)}
-        />
-      ) : null}
+      {bg3FlashSpawns.map((spawn) => {
+        const bg3FlashSrc = resolveMobileAssetUrl(bg3FlashFile(spawn.frameIndex))
+        const bg3Style: CSSProperties = {
+          position: 'absolute',
+          zIndex: m.flash.zIndex,
+          left: `${((spawn.xPx - bg3FlashSizePx / 2) / REFERENCE_WIDTH) * 100}%`,
+          top: `${((spawn.yPx - bg3FlashSizePx / 2) / REFERENCE_HEIGHT) * 100}%`,
+          width: `${(bg3FlashSizePx / REFERENCE_WIDTH) * 100}%`,
+          height: `${(bg3FlashSizePx / REFERENCE_HEIGHT) * 100}%`,
+          objectFit: 'contain',
+          pointerEvents: 'none',
+        }
+        return (
+          <img
+            key={spawn.id}
+            src={bg3FlashSrc}
+            alt=""
+            className="scene-layer scene-bg3-flash"
+            style={bg3Style}
+            draggable={false}
+            onLoad={() => logLayerAsset('scene-bg3-flash', 'load', bg3FlashSrc)}
+            onError={() => logLayerAsset('scene-bg3-flash', 'error', bg3FlashSrc)}
+          />
+        )
+      })}
 
       {bg3AudienceFlashSrc ? (
         <img
