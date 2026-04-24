@@ -144,7 +144,15 @@ export const bg2MemeFile = (frame: number): string => {
   return `dancing_chika_brr_${String(f).padStart(3, '0')}.png`
 }
 
+export const bg2BdwwFile = (): string => 'buy_dip_with_what.png'
+
 export const bg2NeoFile = (): string => 'neo.png'
+
+export const bg2FirstRuleFile = (): string => 'btc_first_rule.png'
+
+export const bg2ArrowUpFile = (): string => 'arrow_up_0.png'
+
+export const bg2ArrowDownFile = (): string => 'arrow_down_0.png'
 
 export const fg3CatFile = (direction: 'left' | 'right', frame: number): string => {
   const f = frame % 2 === 0 ? 1 : 2

@@ -26,10 +26,21 @@ body {
 .app-shell {
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1rem;
   position: relative;
+}
+
+.app-layout {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.stage-anchor {
+  display: flex;
+  justify-content: center;
 }
 
 .stage-shell {
@@ -319,4 +330,82 @@ body {
 .time-elapsed {
   color: #f7931a;
   font-size: 1.5625rem;
+}
+
+.repo-links-panel {
+  position: absolute;
+  left: calc(100% + 1rem);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+  width: 205px;
+}
+
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.58rem 0.72rem;
+  border: 1px solid rgba(247, 147, 26, 0.38);
+  border-radius: 10px;
+  color: #f6f0da;
+  text-decoration: none;
+  background: rgba(7, 7, 12, 0.66);
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.repo-link:hover {
+  border-color: rgba(247, 147, 26, 0.75);
+  background: rgba(18, 17, 30, 0.92);
+  transform: translateY(-1px);
+}
+
+.repo-link:focus-visible {
+  outline: 2px solid #f7931a;
+  outline-offset: 2px;
+}
+
+.repo-link-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
+
+.repo-link-icon-playstore {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.repo-link-playstore {
+  padding: 0.32rem;
+  justify-content: center;
+}
+
+.playstore-badge {
+  display: block;
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  border-radius: 8px;
+}
+
+@media (max-width: 1180px) {
+  .app-layout {
+    width: auto;
+  }
+
+  .repo-links-panel {
+    position: static;
+    transform: none;
+    margin-top: 0.9rem;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }

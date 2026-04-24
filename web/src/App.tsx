@@ -48,6 +48,15 @@ const initialBlockState: BlockState = {
   staleFlashOn: false,
 }
 
+const GITHUB_MARK_PATH =
+  'M12 .5C5.65.5.5 5.67.5 12.03c0 5.11 3.3 9.45 7.88 10.98.58.1.8-.25.8-.56 0-.27-.01-1.16-.02-2.1-3.2.71-3.87-1.38-3.87-1.38-.52-1.36-1.28-1.72-1.28-1.72-1.04-.73.08-.72.08-.72 1.15.08 1.76 1.2 1.76 1.2 1.02 1.78 2.68 1.26 3.33.96.1-.76.4-1.26.72-1.55-2.55-.3-5.23-1.3-5.23-5.8 0-1.28.45-2.33 1.18-3.15-.12-.3-.51-1.5.11-3.13 0 0 .97-.32 3.17 1.2a10.8 10.8 0 0 1 5.77 0c2.2-1.52 3.16-1.2 3.16-1.2.63 1.63.24 2.83.12 3.13.73.82 1.17 1.87 1.17 3.15 0 4.51-2.68 5.49-5.24 5.78.42.37.78 1.09.78 2.2 0 1.6-.01 2.88-.01 3.27 0 .31.21.67.81.56A11.55 11.55 0 0 0 23.5 12.03C23.5 5.67 18.35.5 12 .5Z'
+
+const GitHubMark = () => (
+  <svg className="repo-link-icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+    <path fill="currentColor" d={GITHUB_MARK_PATH} />
+  </svg>
+)
+
 function App() {
   const appShellRef = useRef<HTMLElement | null>(null)
   const [splashDone, setSplashDone] = useState(false)
@@ -75,7 +84,7 @@ function App() {
   const ringIndex = useRingRotation(koLockedUntil)
   const audienceSubFrame = useAudienceSubFrame()
   const bg2Visible = useBg2ChartVisible()
-  const bg2Meme = useBg2MemeState(bg2Visible)
+  const bg2Meme = useBg2MemeState(bg2Visible, feed.market.binance.price, feed.market.coinbase.price)
   const bg4 = useBg4SignState({
     sceneWidthPx: REFERENCE_WIDTH,
     sceneHeightPx: REFERENCE_HEIGHT,
@@ -116,7 +125,7 @@ function App() {
   }, [])
 
   const showCandleChart = splashDone && bg2Visible
-  const showBg2Meme = splashDone
+  const showBg2Meme = splashDone && !showCandleChart && bg2Meme.activeMeme !== null
 
   useEffect(() => {
     // #region agent log
@@ -127,44 +136,82 @@ function App() {
   return (
     <main ref={appShellRef} className="app-shell">
       {!splashDone ? <SplashSequence onDone={onSplashDone} /> : null}
-      <Stage shellRef={appShellRef}>
-        <FightScene
-          satoshi={satoshi}
-          lizard={lizard}
-          alignCharacters={alignCharacters}
-          showCandleChart={showCandleChart}
-          showBg2Meme={showBg2Meme}
-          bg2MemeFrame={bg2Meme.frame}
-          showBg2Neo={bg2Meme.showNeo}
-          bg3FlashFrame={bg3.flashFrame}
-          showBg3AudienceFlash={bg3.showAudienceFlash}
-          bg4SignSpawns={bg4.signSpawns}
-          bg4SignSizePx={bg4.signSizePx}
-          showFg3Cat={fg3.active}
-          fg3Direction={fg3.direction}
-          fg3Frame={fg3.frame}
-          fg3Left={fg3.left}
-          fg3Top={fg3.top}
-          fg3Width={fg3.width}
-          fg3Height={fg3.height}
-          candles={candles}
-          ringIndex={ringIndex}
-          audienceSubFrame={audienceSubFrame}
-          lastAttack={lastAttack}
-        />
-        <Overlay
-          market={feed.market}
-          block={blockState}
-          satoshiDamage={satoshi.damagePoints}
-          lizardDamage={lizard.damagePoints}
-          satoshiMode={satoshi.mode}
-          lizardMode={lizard.mode}
-          satoshiKoCount={satoshiKoCount}
-          lizardKoCount={lizardKoCount}
-          onTimeClick={toggleCharacterAlignment}
-          status={feed.status}
-        />
-      </Stage>
+      <div className="app-layout">
+        <div className="stage-anchor">
+          <Stage shellRef={appShellRef}>
+            <FightScene
+              satoshi={satoshi}
+              lizard={lizard}
+              alignCharacters={alignCharacters}
+              showCandleChart={showCandleChart}
+              showBg2Meme={showBg2Meme}
+              bg2ActiveMeme={bg2Meme.activeMeme}
+              bg3FlashFrame={bg3.flashFrame}
+              showBg3AudienceFlash={bg3.showAudienceFlash}
+              bg4SignSpawns={bg4.signSpawns}
+              bg4SignSizePx={bg4.signSizePx}
+              showFg3Cat={fg3.active}
+              fg3Direction={fg3.direction}
+              fg3Frame={fg3.frame}
+              fg3Left={fg3.left}
+              fg3Top={fg3.top}
+              fg3Width={fg3.width}
+              fg3Height={fg3.height}
+              candles={candles}
+              ringIndex={ringIndex}
+              audienceSubFrame={audienceSubFrame}
+              lastAttack={lastAttack}
+            />
+            <Overlay
+              market={feed.market}
+              block={blockState}
+              satoshiDamage={satoshi.damagePoints}
+              lizardDamage={lizard.damagePoints}
+              satoshiMode={satoshi.mode}
+              lizardMode={lizard.mode}
+              satoshiKoCount={satoshiKoCount}
+              lizardKoCount={lizardKoCount}
+              onTimeClick={toggleCharacterAlignment}
+              status={feed.status}
+            />
+          </Stage>
+        </div>
+
+        <aside className="repo-links-panel" aria-label="Source repositories">
+          <a
+            className="repo-link repo-link-playstore"
+            href="https://play.google.com/store/apps/details?id=com.vv.btcpunchup&pcampaignid=web_share"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="BTC Punch Up on Google Play"
+          >
+            <img
+              className="playstore-badge"
+              src="/playstore-badge.png"
+              alt="Get it on Google Play"
+              draggable={false}
+            />
+          </a>
+          <a
+            className="repo-link"
+            href="https://github.com/VirtusVerbis/BTC_Punch_Up_Web_Port"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <GitHubMark />
+            <span>Web Port Repo</span>
+          </a>
+          <a
+            className="repo-link"
+            href="https://github.com/VirtusVerbis/BTC_Punch_Up"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <GitHubMark />
+            <span>Android Repo</span>
+          </a>
+        </aside>
+      </div>
     </main>
   )
 }

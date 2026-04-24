@@ -4,6 +4,18 @@ import type { AttackEvent, FighterState } from '../game/types'
 import { REFERENCE_HEIGHT, REFERENCE_WIDTH } from '../config/constants'
 import {
   ANIMATION_FRAME_DELAY_MS,
+  BG2_ARROW_DOWN_ASPECT_HEIGHT_PER_WIDTH,
+  BG2_ARROW_DOWN_TOP_OFFSET_FRACTION,
+  BG2_ARROW_UP_ASPECT_HEIGHT_PER_WIDTH,
+  BG2_ARROW_UP_TOP_OFFSET_FRACTION,
+  BG2_BDWW_ASPECT_HEIGHT_PER_WIDTH,
+  BG2_BDWW_TOP_OFFSET_FRACTION,
+  BG2_DCB_ASPECT_HEIGHT_PER_WIDTH,
+  BG2_DCB_TOP_OFFSET_FRACTION,
+  BG2_FR_ASPECT_HEIGHT_PER_WIDTH,
+  BG2_FR_TOP_OFFSET_FRACTION,
+  BG2_NEO_ASPECT_HEIGHT_PER_WIDTH,
+  BG2_NEO_TOP_OFFSET_FRACTION,
   FIGHTER_ANCHOR_Y_OFFSET_FRACTION,
   FIGHTER_BASE_ART_DP,
   FIGHTER_WEB_DISPLAY_FACTOR,
@@ -11,6 +23,10 @@ import {
 import { BtcCandleChart } from './BtcCandleChart'
 import {
   audienceFile,
+  bg2ArrowDownFile,
+  bg2ArrowUpFile,
+  bg2BdwwFile,
+  bg2FirstRuleFile,
   bg2MemeFile,
   bg2NeoFile,
   bg3FlashAudienceFile,
@@ -23,6 +39,7 @@ import {
 import { mobileAssetManifest } from './mobileAssetManifest'
 import { resolveMobileAssetUrl } from './mobileAssetUrls'
 import type { Bg4SignSpawn } from './useBg4SignState'
+import type { Bg2ActiveMeme } from './useBg2MemeState'
 import { useBoxerBobbing } from './useBoxerBobbing'
 
 interface FightSceneProps {
@@ -31,8 +48,7 @@ interface FightSceneProps {
   alignCharacters: boolean
   showCandleChart: boolean
   showBg2Meme: boolean
-  bg2MemeFrame: number
-  showBg2Neo: boolean
+  bg2ActiveMeme: Bg2ActiveMeme | null
   bg3FlashFrame: number | null
   showBg3AudienceFlash: boolean
   bg4SignSpawns: Bg4SignSpawn[]
@@ -105,8 +121,7 @@ export const FightScene = ({
   alignCharacters,
   showCandleChart,
   showBg2Meme,
-  bg2MemeFrame,
-  showBg2Neo,
+  bg2ActiveMeme,
   bg3FlashFrame,
   showBg3AudienceFlash,
   bg4SignSpawns,
@@ -156,7 +171,44 @@ export const FightScene = ({
   const audienceSrc = resolveMobileAssetUrl(audienceFile(ringIndex, audienceSubFrame))
   const bg3FlashSrc = bg3FlashFrame === null ? null : resolveMobileAssetUrl(bg3FlashFile(bg3FlashFrame))
   const bg3AudienceFlashSrc = showBg3AudienceFlash ? resolveMobileAssetUrl(bg3FlashAudienceFile()) : null
-  const bg2MemeSrc = resolveMobileAssetUrl(showBg2Neo ? bg2NeoFile() : bg2MemeFile(bg2MemeFrame))
+  const bg2MemeSrc = (() => {
+    if (!bg2ActiveMeme) return null
+    if (bg2ActiveMeme.sequenceId === 'dcb') return resolveMobileAssetUrl(bg2MemeFile(bg2ActiveMeme.frameIndex + 1))
+    if (bg2ActiveMeme.sequenceId === 'bdww') return resolveMobileAssetUrl(bg2BdwwFile())
+    if (bg2ActiveMeme.sequenceId === 'neo') return resolveMobileAssetUrl(bg2NeoFile())
+    if (bg2ActiveMeme.sequenceId === 'firstRule') return resolveMobileAssetUrl(bg2FirstRuleFile())
+    if (bg2ActiveMeme.sequenceId === 'arrowUp') return resolveMobileAssetUrl(bg2ArrowUpFile())
+    return resolveMobileAssetUrl(bg2ArrowDownFile())
+  })()
+  const bg2TopOffset = (() => {
+    if (!bg2ActiveMeme) return BG2_DCB_TOP_OFFSET_FRACTION
+    if (bg2ActiveMeme.sequenceId === 'dcb') return BG2_DCB_TOP_OFFSET_FRACTION
+    if (bg2ActiveMeme.sequenceId === 'bdww') return BG2_BDWW_TOP_OFFSET_FRACTION
+    if (bg2ActiveMeme.sequenceId === 'neo') return BG2_NEO_TOP_OFFSET_FRACTION
+    if (bg2ActiveMeme.sequenceId === 'firstRule') return BG2_FR_TOP_OFFSET_FRACTION
+    if (bg2ActiveMeme.sequenceId === 'arrowUp') return BG2_ARROW_UP_TOP_OFFSET_FRACTION
+    return BG2_ARROW_DOWN_TOP_OFFSET_FRACTION
+  })()
+  const bg2Aspect = (() => {
+    if (!bg2ActiveMeme) return BG2_DCB_ASPECT_HEIGHT_PER_WIDTH
+    if (bg2ActiveMeme.sequenceId === 'dcb') return BG2_DCB_ASPECT_HEIGHT_PER_WIDTH
+    if (bg2ActiveMeme.sequenceId === 'bdww') return BG2_BDWW_ASPECT_HEIGHT_PER_WIDTH
+    if (bg2ActiveMeme.sequenceId === 'neo') return BG2_NEO_ASPECT_HEIGHT_PER_WIDTH
+    if (bg2ActiveMeme.sequenceId === 'firstRule') return BG2_FR_ASPECT_HEIGHT_PER_WIDTH
+    if (bg2ActiveMeme.sequenceId === 'arrowUp') return BG2_ARROW_UP_ASPECT_HEIGHT_PER_WIDTH
+    return BG2_ARROW_DOWN_ASPECT_HEIGHT_PER_WIDTH
+  })()
+  const bg2HeightPct = sceneHeightPx > 0 ? (sceneWidthPx * bg2Aspect * 100) / sceneHeightPx : bg2Aspect * 100
+  const bg2Style: CSSProperties = {
+    position: 'absolute',
+    zIndex: m.meme.zIndex,
+    left: '0%',
+    top: `${bg2TopOffset * 100}%`,
+    width: '100%',
+    height: `${bg2HeightPct}%`,
+    objectFit: 'contain',
+    pointerEvents: 'none',
+  }
   const ringSrc = resolveMobileAssetUrl(ringFile(ringIndex))
   const fg3CatSrc = resolveMobileAssetUrl(fg3CatFile(fg3Direction, fg3Frame))
   const bg4SizeW = sceneWidthPx > 0 ? bg4SignSizePx / sceneWidthPx : 0
@@ -279,12 +331,12 @@ export const FightScene = ({
         />
       ) : null}
 
-      {showBg2Meme ? (
+      {showBg2Meme && bg2MemeSrc ? (
         <img
           src={bg2MemeSrc}
           alt=""
           className="scene-layer scene-bg2-meme"
-          style={{ ...boxStyle(m.meme), objectFit: m.meme.objectFit }}
+          style={bg2Style}
           draggable={false}
           onLoad={() => logLayerAsset('scene-bg2-meme', 'load', bg2MemeSrc)}
           onError={() => logLayerAsset('scene-bg2-meme', 'error', bg2MemeSrc)}
