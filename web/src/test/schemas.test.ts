@@ -136,6 +136,6 @@ describe('formatExchangePriceLabel', () => {
   })
 
   test('formats last known positive price regardless of connection status', () => {
-    expect(formatExchangePriceLabel(102000.5)).toBe('102,000.5')
+    expect(formatExchangePriceLabel(102000.5)).toBe('102,000.50')
   })
 })

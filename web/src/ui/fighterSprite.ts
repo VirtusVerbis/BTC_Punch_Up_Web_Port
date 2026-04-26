@@ -1,19 +1,11 @@
 import type { AttackEvent, DefenseType, FighterName, FighterPose, FighterState, Hand, PunchType } from '../game/types'
+import { punchFrameCount } from '../game/punchFrames'
 import { ANIMATION_FRAME_DELAY_MS } from './androidMirrorConstants'
 import { resolveMobileAssetUrl } from './mobileAssetUrls'
 
 const tick = (nowMs: number) => Math.floor(nowMs / ANIMATION_FRAME_DELAY_MS)
 
 const cycle = (nowMs: number, len: number) => (tick(nowMs) % len + len) % len
-
-const punchFrameCount = (fighter: FighterName, hand: Hand, punch: PunchType): number => {
-  const uppercuts = 4
-  const hooksLizardLeft = 4
-  const hooksLizardRight = 4
-  if (punch === 'uppercut') return uppercuts
-  if (punch === 'hook' && fighter === 'lizard') return hand === 'left' ? hooksLizardLeft : hooksLizardRight
-  return 3
-}
 
 const punchBase = (fighter: FighterName, hand: Hand, punch: PunchType): string => {
   return `${fighter}_${hand}_${punch}`
@@ -101,8 +93,11 @@ export const pickFighterSpriteFile = (
   }
 
   if (pose === 'attacking' && lastAttack?.attacker === fighter) {
-    const mid = Math.floor(punchFrameCount(fighter, lastAttack.hand, lastAttack.punchType) / 2)
-    return punchFile(fighter, lastAttack.hand, lastAttack.punchType, mid)
+    const n = punchFrameCount(fighter, lastAttack.hand, lastAttack.punchType)
+    const started = lastAttack.startedTs ?? lastAttack.ts
+    const elapsed = Math.max(0, nowMs - started)
+    const frame = Math.min(n - 1, Math.floor(elapsed / ANIMATION_FRAME_DELAY_MS))
+    return punchFile(fighter, lastAttack.hand, lastAttack.punchType, frame)
   }
 
   if (pose === 'defending' || mode === 'defense') {

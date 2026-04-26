@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   BG3_FLASH_AUDIENCE_DISPLAY_MS,
   BG3_FLASH_AUDIENCE_MIN_INTERVAL_MS,
@@ -33,7 +33,7 @@ interface Bg3FlashStateArgs {
 const overlaps = (a: Bg3FlashSpawn, b: Bg3FlashSpawn, sizePx: number): boolean =>
   Math.abs(a.xPx - b.xPx) < sizePx && Math.abs(a.yPx - b.yPx) < sizePx
 
-/** Android-style bg3: KO-gated flash spawns + audience pulse. */
+/** Android-style bg3: KO-gated flash spawns + audience pulse; pauses when tab hidden (`isVisible` parity). */
 export const useBg3FlashState = ({
   flashActive,
   sceneWidthPx,
@@ -42,14 +42,32 @@ export const useBg3FlashState = ({
   const [flashSpawns, setFlashSpawns] = useState<Bg3FlashSpawn[]>([])
   const [audienceFlashUntilMs, setAudienceFlashUntilMs] = useState(0)
   const [lastAudienceFlashAtMs, setLastAudienceFlashAtMs] = useState(0)
+  const [tabVisible, setTabVisible] = useState(
+    () => typeof document === 'undefined' || document.visibilityState === 'visible',
+  )
+  const waveDelayTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | undefined>(undefined)
   const flashSizePx = BG3_FLASH_SIZE_DP
 
   useEffect(() => {
-    if (!flashActive || sceneWidthPx <= 0 || sceneHeightPx <= 0) {
+    if (typeof document === 'undefined') return undefined
+    const onVisibility = () => setTabVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+
+  useEffect(() => {
+    if (!flashActive || !tabVisible || sceneWidthPx <= 0 || sceneHeightPx <= 0) {
       setFlashSpawns([])
       return
     }
     let cancelled = false
+
+    const clearWaveDelay = () => {
+      if (waveDelayTimeoutRef.current !== undefined) {
+        window.clearTimeout(waveDelayTimeoutRef.current)
+        waveDelayTimeoutRef.current = undefined
+      }
+    }
 
     const runSpawnLoop = async () => {
       setFlashSpawns([])
@@ -89,9 +107,19 @@ export const useBg3FlashState = ({
           return newSpawns.length > 0 ? [...next, ...newSpawns] : current
         })
         spawned += newSpawns.length
+
+        if (cancelled) break
+
         await new Promise<void>((resolve) => {
-          const id = window.setTimeout(() => resolve(), BG3_FLASH_SPAWN_WAVE_DELAY_MS)
-          if (cancelled) window.clearTimeout(id)
+          if (cancelled) {
+            resolve()
+            return
+          }
+          clearWaveDelay()
+          waveDelayTimeoutRef.current = window.setTimeout(() => {
+            waveDelayTimeoutRef.current = undefined
+            resolve()
+          }, BG3_FLASH_SPAWN_WAVE_DELAY_MS)
         })
       }
     }
@@ -99,11 +127,12 @@ export const useBg3FlashState = ({
     void runSpawnLoop()
     return () => {
       cancelled = true
+      clearWaveDelay()
     }
-  }, [flashActive, sceneWidthPx, sceneHeightPx, flashSizePx])
+  }, [flashActive, tabVisible, sceneWidthPx, sceneHeightPx, flashSizePx])
 
   useEffect(() => {
-    if (!flashActive) return
+    if (!flashActive || !tabVisible) return
     const id = window.setInterval(() => {
       const now = Date.now()
       setFlashSpawns((current) => {
@@ -120,10 +149,10 @@ export const useBg3FlashState = ({
       })
     }, BG3_FLASH_FRAME_DELAY_MS)
     return () => window.clearInterval(id)
-  }, [flashActive, lastAudienceFlashAtMs])
+  }, [flashActive, tabVisible, lastAudienceFlashAtMs])
 
   useEffect(() => {
-    if (!flashActive) {
+    if (!flashActive || !tabVisible) {
       setFlashSpawns([])
       setAudienceFlashUntilMs(0)
       setLastAudienceFlashAtMs(0)
@@ -131,9 +160,9 @@ export const useBg3FlashState = ({
     }
 
     // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H2', location: 'useBg3FlashState.ts:121', message: 'bg3 flash ko-gated state', data: { flashActive, spawnCount: flashSpawns.length, audienceFlashUntilMs, frameDelayMs: BG3_FLASH_FRAME_DELAY_MS, frameCount: BG3_FLASH_FRAME_COUNT }, timestamp: Date.now() }) }).catch(() => {})
+    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H2', location: 'useBg3FlashState.ts:agentLog', message: 'bg3 flash ko-gated state', data: { flashActive, tabVisible, spawnCount: flashSpawns.length, audienceFlashUntilMs, frameDelayMs: BG3_FLASH_FRAME_DELAY_MS, frameCount: BG3_FLASH_FRAME_COUNT }, timestamp: Date.now() }) }).catch(() => {})
     // #endregion
-  }, [flashActive, flashSpawns.length, audienceFlashUntilMs])
+  }, [flashActive, tabVisible, flashSpawns.length, audienceFlashUntilMs])
 
   return { flashSpawns, audienceFlashUntilMs, flashSizePx }
 }

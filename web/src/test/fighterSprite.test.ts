@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createEmptyLastPunchUsedAt } from '../game/mechanics'
 import type { AttackEvent, FighterState } from '../game/types'
 import {
   audienceFile,
@@ -14,7 +15,7 @@ const fighter = (over: Partial<FighterState>): FighterState => ({
   pose: 'idle',
   damagePoints: 0,
   koLockedUntil: 0,
-  lastAttackAt: 0,
+  lastPunchUsedAt: createEmptyLastPunchUsedAt(),
   ...over,
 })
 

@@ -26,7 +26,21 @@ export interface AttackEvent {
   hand: Hand
   punchType: PunchType
   landed: boolean
+  /** Impact / resolution time (when `landed` is authoritative). */
   ts: number
+  /** When the punch animation started (wind-up); used for sprite frame progression. */
+  startedTs?: number
+}
+
+/** One in-flight punch timeline (global); mirrors Android pending-impact style sequencing. */
+export interface PunchSequence {
+  attacker: FighterName
+  hand: Hand
+  punchType: PunchType
+  startTs: number
+  impactAt: number
+  endTs: number
+  impactResolved: boolean
 }
 
 export interface FighterState {
@@ -36,5 +50,6 @@ export interface FighterState {
   pose: FighterPose
   damagePoints: number
   koLockedUntil: number
-  lastAttackAt: number
+  /** Last time each punch type completed its full sequence (`endTs`), for per-type cooldowns. */
+  lastPunchUsedAt: Record<PunchType, number>
 }

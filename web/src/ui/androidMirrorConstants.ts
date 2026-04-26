@@ -17,6 +17,8 @@ export const BG2_VISIBLE_DURATION_MS = 30_000
 export const BG2_CHART_TOP_OFFSET_FRACTION = 0.13
 /** Android parity: chart occupies ~49.5% screen height from 15% top offset. */
 export const BG2_CHART_HEIGHT_FRACTION = 0.495
+/** Android `BG2_MAX_CANDLES`: max 1m candles kept / requested for BG1 chart. */
+export const BG2_MAX_CANDLES = 200
 
 export const BG2_MEME_PRICE_WINDOW_MS = 60_000
 
@@ -100,6 +102,13 @@ export const FIGHTER_WEB_DISPLAY_FACTOR = 1.35
 
 /** Web-only: shift both boxer anchor centers (positive = down); fraction of scene height (see FightScene). */
 export const FIGHTER_ANCHOR_Y_OFFSET_FRACTION = 0.05
+
+/** Android `Sprite` horizontal center correction in dp (sprite-space), applied in `fighterStyle`. */
+export const SATOSHI_CENTER_BIAS_DP = 0 // 20
+export const LIZARD_CENTER_BIAS_DP = 0 //115
+
+/** Android `PUNCH_PRIORITY_HAND` when both hands have a punch ready (`HandSide.RIGHT` in MainActivity). */
+export const PUNCH_PRIORITY_HAND = 'right' as const
 
 /** Android `MainActivity` boxer bobbing (pixels on 1080×1920 reference; scaled in `useBoxerBobbing`). */
 export const BOBBING_MAX_X_LEFT = -20

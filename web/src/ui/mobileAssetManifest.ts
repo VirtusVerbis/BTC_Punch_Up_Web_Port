@@ -16,12 +16,14 @@ import {
  * z-index (Android parity, all &lt; overlay z-20):
  * - 0: `.scene-hud-bg` (CSS)
  * - 2: bg5 audience
- * - 3–5: reserved for future bg4 signs / bg3 flash / bg2 memes
+ * - 3: bg4 buy signs
+ * - 4: bg3 flash
+ * - 5: bg2 memes
  * - 6: bg1 chart band
  * - 7: bg0 ring (closest background)
  * - 8: fg1 Lizard (behind Satoshi)
  * - 9: fg2 Satoshi
- * - 10: reserved fg3 (e.g. cat)
+ * - 10: fg3 cat
  */
 export const mobileAssetManifest = {
   /** Reserved for PNG-backed HUD; Android uses Compose text/bars instead. */
@@ -33,7 +35,9 @@ export const mobileAssetManifest = {
     top: 0,
     width: 1,
     height: 1,
-    objectFit: 'cover' as const,
+    /** Android bg5: `fillMaxSize()` + `ContentScale.Fit` + `Alignment.TopCenter` → `contain` + `center top`. */
+    objectFit: 'contain' as const,
+    objectPosition: 'center top' as const,
   },
 
   buySigns: {
@@ -71,15 +75,15 @@ export const mobileAssetManifest = {
     height: BG2_CHART_HEIGHT_FRACTION,
   },
 
+  /** Android bg0: `fillMaxSize()` + `ContentScale.Fit` + `Alignment.BottomCenter`. */
   ring: {
     zIndex: 7,
-    left: 0.01,
-    /** Shifted up by ~30% per latest calibration request. */
-    top: 0.27,
-    width: 0.98,
-    /** Extend to bottom edge: 0.27 top + 0.73 height = 1.00 */
-    height: 0.73,
-    objectFit: 'cover' as const,
+    left: 0,
+    top: 0.15,
+    width: 1,
+    height: 1,
+    objectFit: 'contain' as const,
+    objectPosition: 'center bottom' as const,
   },
 
   lizard: {

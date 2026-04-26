@@ -19,6 +19,8 @@ import {
   FIGHTER_ANCHOR_Y_OFFSET_FRACTION,
   FIGHTER_BASE_ART_DP,
   FIGHTER_WEB_DISPLAY_FACTOR,
+  LIZARD_CENTER_BIAS_DP,
+  SATOSHI_CENTER_BIAS_DP,
 } from './androidMirrorConstants'
 import { BtcCandleChart } from './BtcCandleChart'
 import {
@@ -89,6 +91,7 @@ const fighterStyle = (
   alignCharacters: boolean,
   sceneWidthPx: number,
   bob: { xBobPx: number; yBobPx: number; depth: number },
+  centerBiasDp: number,
 ): CSSProperties => {
   const dx = alignCharacters ? cfg.alignDeltaX : 0
   const w = Math.max(1, sceneWidthPx)
@@ -97,6 +100,8 @@ const fighterStyle = (
     (w * FIGHTER_BASE_ART_DP * cfg.scale * FIGHTER_WEB_DISPLAY_FACTOR) / REFERENCE_WIDTH
   const anchorY = Math.min(1, cfg.anchorY + FIGHTER_ANCHOR_Y_OFFSET_FRACTION)
   const { xBobPx, yBobPx, depth } = bob
+  /** Android `Sprite`: `centerBiasPx = CENTER_BIAS_DP * density`; map dp via reference width. */
+  const biasPx = (centerBiasDp * w) / REFERENCE_WIDTH
   return {
     position: 'absolute',
     zIndex: cfg.zIndex,
@@ -105,7 +110,7 @@ const fighterStyle = (
     width: `${boxPx}px`,
     height: `${boxPx}px`,
     objectFit: 'contain' as const,
-    transform: `translate(calc(-50% + ${xBobPx}px), calc(-50% + ${yBobPx}px)) scale(${depth})`,
+    transform: `translate(calc(-50% + ${xBobPx + biasPx}px), calc(-50% + ${yBobPx}px)) scale(${depth})`,
     transformOrigin: 'center center',
     pointerEvents: 'none',
   }
@@ -277,8 +282,10 @@ export const FightScene = ({
         src={audienceSrc}
         alt=""
         className="scene-layer scene-audience"
-        style={{ ...boxStyle(audienceRect), objectFit: audienceRect.objectFit }}
+        style={{ ...boxStyle(audienceRect), objectFit: audienceRect.objectFit, objectPosition: audienceRect.objectPosition }}
         draggable={false}
+        onLoad={() => logLayerAsset('scene-audience', 'load', audienceSrc)}
+        onError={() => logLayerAsset('scene-audience', 'error', audienceSrc)}
       />
 
       {showCandleChart
@@ -369,7 +376,7 @@ export const FightScene = ({
         src={ringSrc}
         alt=""
         className="scene-layer scene-ring"
-        style={{ ...boxStyle(m.ring), objectFit: m.ring.objectFit }}
+        style={{ ...boxStyle(m.ring), objectFit: m.ring.objectFit, objectPosition: m.ring.objectPosition }}
         draggable={false}
       />
 
@@ -377,11 +384,17 @@ export const FightScene = ({
         src={lizardSrc}
         alt=""
         className="scene-fighter scene-lizard"
-        style={fighterStyle(m.lizard, alignCharacters, sceneWidthPx, {
-          xBobPx: bob.xBobLizardPx,
-          yBobPx: bob.yBobPx,
-          depth: bob.depthLizard,
-        })}
+        style={fighterStyle(
+          m.lizard,
+          alignCharacters,
+          sceneWidthPx,
+          {
+            xBobPx: bob.xBobLizardPx,
+            yBobPx: bob.yBobPx,
+            depth: bob.depthLizard,
+          },
+          LIZARD_CENTER_BIAS_DP,
+        )}
         draggable={false}
         tabIndex={-1}
       />
@@ -389,11 +402,17 @@ export const FightScene = ({
         src={satoshiSrc}
         alt=""
         className="scene-fighter scene-satoshi"
-        style={fighterStyle(m.satoshi, alignCharacters, sceneWidthPx, {
-          xBobPx: bob.xBobSatoshiPx,
-          yBobPx: bob.yBobPx,
-          depth: bob.depthSatoshi,
-        })}
+        style={fighterStyle(
+          m.satoshi,
+          alignCharacters,
+          sceneWidthPx,
+          {
+            xBobPx: bob.xBobSatoshiPx,
+            yBobPx: bob.yBobPx,
+            depth: bob.depthSatoshi,
+          },
+          SATOSHI_CENTER_BIAS_DP,
+        )}
         draggable={false}
         tabIndex={-1}
       />

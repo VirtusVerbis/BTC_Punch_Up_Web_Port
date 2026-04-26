@@ -14,6 +14,15 @@ import type {
   PunchType,
 } from './types'
 
+/** Initial map for `FighterState.lastPunchUsedAt` (epoch = never used). */
+export const createEmptyLastPunchUsedAt = (): Record<PunchType, number> => ({
+  jab: 0,
+  body: 0,
+  hook: 0,
+  cross: 0,
+  uppercut: 0,
+})
+
 const toPercent = (value: number, maxValue: number): number => {
   if (maxValue <= 0) {
     return 0
@@ -82,6 +91,21 @@ export const getHandPercents = (market: MarketSnapshot, volumeType: 'buy' | 'sel
   }
 }
 
+/** Pick which hand/punch to execute when left/right exchange percents yield independent types (Satoshi buy-side, Lizard sell-side). */
+export const selectDualHandPunch = (
+  left: PunchType | null,
+  right: PunchType | null,
+  priorityHand: Hand,
+): { hand: Hand; punchType: PunchType } | null => {
+  if (left === null && right === null) return null
+  if (left !== null && right !== null) {
+    if (priorityHand === 'right') return { hand: 'right', punchType: right }
+    return { hand: 'left', punchType: left }
+  }
+  if (left !== null) return { hand: 'left', punchType: left }
+  return { hand: 'right', punchType: right! }
+}
+
 export const nextAttackIfAvailable = (
   fighter: FighterState,
   ts: number,
@@ -92,7 +116,8 @@ export const nextAttackIfAvailable = (
   }
   const punchType = pickPunchType(handPercent)
   const cooldown = PUNCH_COOLDOWNS_MS[punchType]
-  if (ts - fighter.lastAttackAt < cooldown) {
+  const lastUsed = fighter.lastPunchUsedAt[punchType]
+  if (lastUsed > 0 && ts - lastUsed < cooldown) {
     return null
   }
   return punchType

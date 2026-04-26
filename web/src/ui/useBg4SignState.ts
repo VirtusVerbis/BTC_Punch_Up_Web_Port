@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   BG4_SIGN_FRAMES,
   BG4_SIGN_FRAME_DELAY_MS,
@@ -25,21 +25,33 @@ interface UseBg4SignStateParams {
   sceneWidthPx: number
   sceneHeightPx: number
   ringIndex: number
-  bg2Visible: boolean
   koKnockedDown: boolean
+  bg3FlashSpawnCount: number
+  bg3AudienceFlashUntilMs: number
 }
 
-/** Android-style bg4 signs: wave spawns, one-per-row occupancy, per-sign frame lifecycle. */
+/** Android-style bg4 signs: wave spawns, one-per-row occupancy; paused while bg3 flash is active. */
 export const useBg4SignState = ({
   sceneWidthPx,
   sceneHeightPx,
   ringIndex,
-  bg2Visible,
   koKnockedDown,
+  bg3FlashSpawnCount,
+  bg3AudienceFlashUntilMs,
 }: UseBg4SignStateParams): Bg4SignState => {
   const [signSpawns, setSignSpawns] = useState<Bg4SignSpawn[]>([])
   const nextIdRef = useRef(1)
   const lastRingRef = useRef(ringIndex)
+  const bg3SpawnCountRef = useRef(0)
+  const bg3AudienceUntilRef = useRef(0)
+
+  useLayoutEffect(() => {
+    bg3SpawnCountRef.current = bg3FlashSpawnCount
+    bg3AudienceUntilRef.current = bg3AudienceFlashUntilMs
+  }, [bg3FlashSpawnCount, bg3AudienceFlashUntilMs])
+
+  const bg3PausesBg4 = (): boolean =>
+    bg3SpawnCountRef.current > 0 || Date.now() < bg3AudienceUntilRef.current
 
   const signSizePx = useMemo(() => (BG4_SIGN_SIZE_DP * sceneWidthPx) / 360, [sceneWidthPx])
 
@@ -52,7 +64,7 @@ export const useBg4SignState = ({
   useEffect(() => {
     const spawnId = window.setInterval(() => {
       setSignSpawns((prev) => {
-        if (bg2Visible || koKnockedDown || sceneWidthPx <= 0 || sceneHeightPx <= 0) return prev
+        if (koKnockedDown || sceneWidthPx <= 0 || sceneHeightPx <= 0 || bg3PausesBg4()) return prev
         const occupiedRows = new Set(prev.map((s) => s.rowIndex))
         const availableRows = BG4_SIGN_ROW_Y_FRACTIONS.map((_, i) => i).filter((i) => !occupiedRows.has(i))
         const requestedCount = Math.floor(Math.random() * 3) + 1
@@ -76,24 +88,26 @@ export const useBg4SignState = ({
     }, BG4_SIGN_SPAWN_INTERVAL_MS)
 
     const frameId = window.setInterval(() => {
-      setSignSpawns((prev) =>
-        prev
+      setSignSpawns((prev) => {
+        if (bg3PausesBg4()) return prev
+        return prev
           .map((s) => ({ ...s, frameIndex: s.frameIndex + 1 }))
-          .filter((s) => s.frameIndex < BG4_SIGN_FRAMES),
-      )
+          .filter((s) => s.frameIndex < BG4_SIGN_FRAMES)
+      })
     }, BG4_SIGN_FRAME_DELAY_MS)
 
     return () => {
       window.clearInterval(spawnId)
       window.clearInterval(frameId)
     }
-  }, [bg2Visible, koKnockedDown, sceneWidthPx, sceneHeightPx])
+  }, [koKnockedDown, sceneWidthPx, sceneHeightPx])
 
   useEffect(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H1', location: 'useBg4SignState.ts:96', message: 'bg4 spawn lifecycle', data: { count: signSpawns.length, rows: signSpawns.map((s) => s.rowIndex), frames: signSpawns.map((s) => s.frameIndex), ringIndex, bg2Visible, koKnockedDown, signDelayMs: BG4_SIGN_FRAME_DELAY_MS, spawnIntervalMs: BG4_SIGN_SPAWN_INTERVAL_MS }, timestamp: Date.now() }) }).catch(() => {})
+    const bg3Paused = bg3FlashSpawnCount > 0 || Date.now() < bg3AudienceFlashUntilMs
+    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H1', location: 'useBg4SignState.ts:agentLog', message: 'bg4 spawn lifecycle', data: { count: signSpawns.length, rows: signSpawns.map((s) => s.rowIndex), frames: signSpawns.map((s) => s.frameIndex), ringIndex, koKnockedDown, bg3FlashSpawnCount, bg3AudienceFlashUntilMs, bg3Paused, signDelayMs: BG4_SIGN_FRAME_DELAY_MS, spawnIntervalMs: BG4_SIGN_SPAWN_INTERVAL_MS }, timestamp: Date.now() }) }).catch(() => {})
     // #endregion
-  }, [signSpawns, ringIndex, bg2Visible, koKnockedDown])
+  }, [signSpawns, ringIndex, koKnockedDown, bg3FlashSpawnCount, bg3AudienceFlashUntilMs])
 
   return { signSpawns, signSizePx }
 }

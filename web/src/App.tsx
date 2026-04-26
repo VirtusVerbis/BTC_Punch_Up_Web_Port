@@ -14,6 +14,7 @@ import { useBg2ChartVisible } from './ui/useBg2ChartVisibility'
 import { useBg3FlashState } from './ui/useBg3FlashState'
 import { useBg4SignState } from './ui/useBg4SignState'
 import { useFg3CatState } from './ui/useFg3CatState'
+import { ANIMATION_FRAME_DELAY_MS, BG2_MAX_CANDLES } from './ui/androidMirrorConstants'
 import { useRingRotation } from './ui/useRingRotation'
 
 const emptyMarket = (): MarketFeedUpdate['market'] => ({
@@ -73,29 +74,34 @@ function App() {
   const satoshiKoCount = useGameStore((state) => state.satoshiKoCount)
   const lizardKoCount = useGameStore((state) => state.lizardKoCount)
   const applyMarketTick = useGameStore((state) => state.applyMarketTick)
+  const advanceCombat = useGameStore((state) => state.advanceCombat)
   const toggleCharacterAlignment = useGameStore((state) => state.toggleCharacterAlignment)
 
   const setFeedRef = useRef(setFeed)
   setFeedRef.current = setFeed
   const applyMarketTickRef = useRef(applyMarketTick)
   applyMarketTickRef.current = applyMarketTick
+  const advanceCombatRef = useRef(advanceCombat)
+  advanceCombatRef.current = advanceCombat
 
   const koLockedUntil = Math.max(satoshi.koLockedUntil, lizard.koLockedUntil)
   const ringIndex = useRingRotation(koLockedUntil)
   const audienceSubFrame = useAudienceSubFrame()
   const bg2Visible = useBg2ChartVisible()
   const bg2Meme = useBg2MemeState(bg2Visible, feed.market.binance.price, feed.market.coinbase.price)
+  const koKnockedDown = satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown'
+  const bg3 = useBg3FlashState({
+    flashActive: koKnockedDown,
+    sceneWidthPx: REFERENCE_WIDTH,
+    sceneHeightPx: REFERENCE_HEIGHT,
+  })
   const bg4 = useBg4SignState({
     sceneWidthPx: REFERENCE_WIDTH,
     sceneHeightPx: REFERENCE_HEIGHT,
     ringIndex,
-    bg2Visible,
-    koKnockedDown: satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown',
-  })
-  const bg3 = useBg3FlashState({
-    flashActive: satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown',
-    sceneWidthPx: REFERENCE_WIDTH,
-    sceneHeightPx: REFERENCE_HEIGHT,
+    koKnockedDown,
+    bg3FlashSpawnCount: bg3.flashSpawns.length,
+    bg3AudienceFlashUntilMs: bg3.audienceFlashUntilMs,
   })
   const fg3 = useFg3CatState()
 
@@ -120,15 +126,20 @@ function App() {
   }, [marketService])
 
   useEffect(() => {
+    const id = window.setInterval(() => advanceCombatRef.current(), ANIMATION_FRAME_DELAY_MS)
+    return () => window.clearInterval(id)
+  }, [])
+
+  useEffect(() => {
     const load = () => {
-      void fetchBinanceBtc1mKlines(150).then(setCandles)
+      void fetchBinanceBtc1mKlines(BG2_MAX_CANDLES).then(setCandles)
     }
     load()
     const id = window.setInterval(load, 60_000)
     return () => window.clearInterval(id)
   }, [])
 
-  const showCandleChart = splashDone && bg2Visible
+  const showCandleChart = bg2Visible
   const showBg2Meme = splashDone && !showCandleChart && bg2Meme.activeMeme !== null
 
   useEffect(() => {

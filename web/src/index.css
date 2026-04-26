@@ -107,10 +107,10 @@ body {
   overflow: hidden;
 }
 
+/* Android bg3: Compose `Image` default compositing (no BlendMode on flash layers in MainActivity). */
 .scene-bg3-flash,
 .scene-bg3-flash-audience {
-  mix-blend-mode: screen;
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .scene-bg2-meme {
