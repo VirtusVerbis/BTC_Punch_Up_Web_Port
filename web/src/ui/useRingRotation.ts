@@ -25,11 +25,11 @@ export const useRingRotation = (koLockedUntil: number): number => {
     if (!tabVisible) return
 
     let cancelled = false
-    let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+    let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
 
     const delay = (ms: number) =>
       new Promise<void>((resolve) => {
-        timeoutId = window.setTimeout(() => {
+        timeoutId = globalThis.setTimeout(() => {
           timeoutId = undefined
           resolve()
         }, ms)
@@ -59,7 +59,7 @@ export const useRingRotation = (koLockedUntil: number): number => {
     void run()
     return () => {
       cancelled = true
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId)
     }
   }, [tabVisible])
 

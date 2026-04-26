@@ -11,18 +11,18 @@ export const useAudienceSubFrame = (): number => {
   useEffect(() => {
     if (typeof document === 'undefined') return undefined
 
-    let intervalId: ReturnType<typeof window.setInterval> | undefined
+    let intervalId: ReturnType<typeof globalThis.setInterval> | undefined
 
     const clear = () => {
       if (intervalId !== undefined) {
-        window.clearInterval(intervalId)
+        globalThis.clearInterval(intervalId)
         intervalId = undefined
       }
     }
 
     const start = () => {
       clear()
-      intervalId = window.setInterval(() => {
+      intervalId = globalThis.setInterval(() => {
         setSub((s) => (s + 1) % 3)
       }, AUDIENCE_FRAME_DELAY_MS)
     }

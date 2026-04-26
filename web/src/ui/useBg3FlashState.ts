@@ -45,7 +45,7 @@ export const useBg3FlashState = ({
   const [tabVisible, setTabVisible] = useState(
     () => typeof document === 'undefined' || document.visibilityState === 'visible',
   )
-  const waveDelayTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | undefined>(undefined)
+  const waveDelayTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | undefined>(undefined)
   const flashSizePx = BG3_FLASH_SIZE_DP
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export const useBg3FlashState = ({
 
     const clearWaveDelay = () => {
       if (waveDelayTimeoutRef.current !== undefined) {
-        window.clearTimeout(waveDelayTimeoutRef.current)
+        globalThis.clearTimeout(waveDelayTimeoutRef.current)
         waveDelayTimeoutRef.current = undefined
       }
     }
@@ -116,7 +116,7 @@ export const useBg3FlashState = ({
             return
           }
           clearWaveDelay()
-          waveDelayTimeoutRef.current = window.setTimeout(() => {
+          waveDelayTimeoutRef.current = globalThis.setTimeout(() => {
             waveDelayTimeoutRef.current = undefined
             resolve()
           }, BG3_FLASH_SPAWN_WAVE_DELAY_MS)

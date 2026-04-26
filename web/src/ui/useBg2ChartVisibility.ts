@@ -22,11 +22,11 @@ export const useBg2ChartVisible = (): boolean => {
     }
 
     let cancelled = false
-    let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+    let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
 
     const delay = (ms: number) =>
       new Promise<void>((resolve) => {
-        timeoutId = window.setTimeout(() => {
+        timeoutId = globalThis.setTimeout(() => {
           timeoutId = undefined
           resolve()
         }, ms)
@@ -47,7 +47,7 @@ export const useBg2ChartVisible = (): boolean => {
 
     return () => {
       cancelled = true
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId)
     }
   }, [tabVisible])
 
