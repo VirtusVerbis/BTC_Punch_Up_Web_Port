@@ -26,7 +26,8 @@ export const BG2_MEME_FRAME_DELAY_MS = 120
 export const BG2_MEME_CYCLE_FRAMES = 40
 export const BG2_DCB_MIN_FRAME_INTERVAL_MS = 80
 export const BG2_DCB_FRAME_DELAY_MS = 250
-export const BG2_DCB_TOP_OFFSET_FRACTION = 0.17
+/** Tuned with aspect-based box height so body stays near chart band (see BG2_CHART_*). */
+export const BG2_DCB_TOP_OFFSET_FRACTION = 0.15
 export const BG2_DCB_PRICE_INCREASE_PERCENT = 2.0001
 export const BG2_DCB_PRICE_INCREASE_PERCENT_MAX = 3.0
 export const BG2_DCB_ASPECT_HEIGHT_PER_WIDTH = 176 / 320
@@ -34,31 +35,35 @@ export const BG2_DCB_ASPECT_HEIGHT_PER_WIDTH = 176 / 320
 export const BG2_BDWW_DISPLAY_MS = 30_000
 export const BG2_BDWW_PRICE_DROP_PERCENT = 2.0001
 export const BG2_BDWW_PRICE_DROP_PERCENT_MAX = 3.0
-export const BG2_BDWW_TOP_OFFSET_FRACTION = 0.08
+/** ~square meme at full width: keep bottom near chart band end (BG2_CHART_TOP + BG2_CHART_HEIGHT). */
+export const BG2_BDWW_TOP_OFFSET_FRACTION = 0.06
 export const BG2_BDWW_ASPECT_HEIGHT_PER_WIDTH = 1.0
 
 export const BG2_NEO_DISPLAY_MS = 30_000
 export const BG2_NEO_PRICE_INCREASE_PERCENT = 1.0
 export const BG2_NEO_PRICE_INCREASE_PERCENT_MAX = 2.0
-export const BG2_NEO_TOP_OFFSET_FRACTION = 0.08
-export const BG2_NEO_ASPECT_HEIGHT_PER_WIDTH = 1.0
+export const BG2_NEO_TOP_OFFSET_FRACTION = 0.06
+/** MainActivity `NEO_ASPECT_HEIGHT_PER_WIDTH = 1f` (same formula as other 1:1 memes). */
+export const BG2_NEO_ASPECT_HEIGHT_PER_WIDTH = 1
 
 export const BG2_FR_DISPLAY_MS = 30_000
 export const BG2_FR_PRICE_DROP_PERCENT = 1.0
 export const BG2_FR_PRICE_DROP_PERCENT_MAX = 2.0
-export const BG2_FR_TOP_OFFSET_FRACTION = 0.09
+export const BG2_FR_TOP_OFFSET_FRACTION = 0.065
 export const BG2_FR_ASPECT_HEIGHT_PER_WIDTH = 1.0
 
 export const BG2_ARROW_UP_DISPLAY_MS = 10_000
-export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT = 0.1
-export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT_MAX = 0.9999
-export const BG2_ARROW_UP_TOP_OFFSET_FRACTION = -0.15
+export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT = 0.00000000001 //0.1
+export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT_MAX = 999999//0.9999
+/** Align with candle chart band top (`BG2_CHART_TOP_OFFSET_FRACTION`); tall aspect fills downward. */
+export const BG2_ARROW_UP_TOP_OFFSET_FRACTION = 0.13
 export const BG2_ARROW_UP_ASPECT_HEIGHT_PER_WIDTH = 3.5
 
 export const BG2_ARROW_DOWN_DISPLAY_MS = 10_000
-export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT = 0.1
-export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT_MAX = 0.9999
-export const BG2_ARROW_DOWN_TOP_OFFSET_FRACTION = -0.15
+export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT = 0.00000000001 //0.1
+export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT_MAX = 999999//0.9999
+/** Same vertical anchor as arrow up + chart band. */
+export const BG2_ARROW_DOWN_TOP_OFFSET_FRACTION = 0.13
 export const BG2_ARROW_DOWN_ASPECT_HEIGHT_PER_WIDTH = 3.5
 
 export const BG4_SIGN_FRAME_DELAY_MS = 600
@@ -83,7 +88,7 @@ export const FG3_CAT_SPAWN_INTERVAL_MS = 15 * 60 * 1000
 /** Android parity: cat movement step applied on each animation tick. */
 export const FG3_CAT_SPEED_PX_PER_TICK = 8
 /** Android parity: spawn lane near bottom of scene (fraction of scene height). */
-export const FG3_CAT_SPAWN_Y_FACTOR = 0.990
+export const FG3_CAT_SPAWN_Y_FACTOR = 1.01
 /** Android parity source size in dp (`CAT_SIZE_DP`). */
 export const FG3_CAT_SIZE_DP = 64
 /** Extra margin beyond scene bounds before spawn/despawn. */

@@ -196,6 +196,7 @@ export const FightScene = ({
     if (bg2ActiveMeme.sequenceId === 'arrowUp') return BG2_ARROW_UP_TOP_OFFSET_FRACTION
     return BG2_ARROW_DOWN_TOP_OFFSET_FRACTION
   })()
+  /** Android `MainActivity`: `fillMaxWidth` + height `(screenWidth * aspectHeightPerWidth / density).dp`. */
   const bg2Aspect = (() => {
     if (!bg2ActiveMeme) return BG2_DCB_ASPECT_HEIGHT_PER_WIDTH
     if (bg2ActiveMeme.sequenceId === 'dcb') return BG2_DCB_ASPECT_HEIGHT_PER_WIDTH
@@ -205,12 +206,14 @@ export const FightScene = ({
     if (bg2ActiveMeme.sequenceId === 'arrowUp') return BG2_ARROW_UP_ASPECT_HEIGHT_PER_WIDTH
     return BG2_ARROW_DOWN_ASPECT_HEIGHT_PER_WIDTH
   })()
-  const bg2HeightPct = sceneHeightPx > 0 ? (sceneWidthPx * bg2Aspect * 100) / sceneHeightPx : bg2Aspect * 100
+  const bg2HeightPct =
+    sceneHeightPx > 0 ? (sceneWidthPx * bg2Aspect * 100) / sceneHeightPx : bg2Aspect * 100
+  const bg2TopPct = bg2TopOffset * 100
   const bg2Style: CSSProperties = {
     position: 'absolute',
     zIndex: m.meme.zIndex,
     left: '0%',
-    top: `${bg2TopOffset * 100}%`,
+    top: `${bg2TopPct}%`,
     width: '100%',
     height: `${bg2HeightPct}%`,
     objectFit: 'contain',

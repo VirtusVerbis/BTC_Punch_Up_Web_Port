@@ -98,6 +98,7 @@ export const useBg2MemeState = (
         (p) => p.atMs > cutoff,
       )
     }
+
   }, [binancePrice, coinbasePrice])
 
   useEffect(() => {
@@ -177,6 +178,7 @@ export const useBg2MemeState = (
         BG2_ARROW_DOWN_PRICE_DROP_PERCENT,
         BG2_ARROW_DOWN_PRICE_DROP_PERCENT_MAX,
       )
+
     if (downArrow) {
       lastTriggerAtRef.current = now
       setActiveMeme({ sequenceId: 'arrowDown', frameIndex: 0 })
