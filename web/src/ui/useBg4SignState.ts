@@ -102,12 +102,5 @@ export const useBg4SignState = ({
     }
   }, [koKnockedDown, sceneWidthPx, sceneHeightPx])
 
-  useEffect(() => {
-    // #region agent log
-    const bg3Paused = bg3FlashSpawnCount > 0 || Date.now() < bg3AudienceFlashUntilMs
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H1', location: 'useBg4SignState.ts:agentLog', message: 'bg4 spawn lifecycle', data: { count: signSpawns.length, rows: signSpawns.map((s) => s.rowIndex), frames: signSpawns.map((s) => s.frameIndex), ringIndex, koKnockedDown, bg3FlashSpawnCount, bg3AudienceFlashUntilMs, bg3Paused, signDelayMs: BG4_SIGN_FRAME_DELAY_MS, spawnIntervalMs: BG4_SIGN_SPAWN_INTERVAL_MS }, timestamp: Date.now() }) }).catch(() => {})
-    // #endregion
-  }, [signSpawns, ringIndex, koKnockedDown, bg3FlashSpawnCount, bg3AudienceFlashUntilMs])
-
   return { signSpawns, signSizePx }
 }

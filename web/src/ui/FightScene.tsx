@@ -116,12 +116,6 @@ const fighterStyle = (
   }
 }
 
-const logLayerAsset = (layer: string, event: 'load' | 'error', src: string) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H6', location: 'FightScene.tsx:74', message: 'layer asset event', data: { layer, event, src }, timestamp: Date.now() }) }).catch(() => {})
-  // #endregion
-}
-
 export const FightScene = ({
   satoshi,
   lizard,
@@ -246,37 +240,6 @@ export const FightScene = ({
 
   const hudBg = m.hudBackground ? resolveMobileAssetUrl(m.hudBackground) : null
 
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H5', location: 'FightScene.tsx:173', message: 'layer render gates and assets', data: { showBg2Meme, showCandleChart, bg3FlashSpawnCount: bg3FlashSpawns.length, showBg3AudienceFlash: nowMs < bg3AudienceFlashUntilMs, bg4SignCount: bg4SignSpawns.length, showFg3Cat, fg3Direction, fg3Frame, fg3Left, fg3Top, fg3Width, fg3Height, bg3AudienceFlashSrc, bg2MemeSrc, fg3CatSrc, z: { bg4: m.buySigns.zIndex, bg3: m.flash.zIndex, bg2: m.meme.zIndex, bg1: m.chartBand.zIndex, bg0: m.ring.zIndex, fg1: m.lizard.zIndex, fg2: m.satoshi.zIndex, fg3: m.fg3.zIndex } }, timestamp: Date.now() }) }).catch(() => {})
-    // #endregion
-  }, [
-    showBg2Meme,
-    showCandleChart,
-    bg3FlashSpawns.length,
-    nowMs,
-    bg3AudienceFlashUntilMs,
-    bg4SignSpawns.length,
-    showFg3Cat,
-    fg3Direction,
-    fg3Frame,
-    fg3Left,
-    fg3Top,
-    fg3Width,
-    fg3Height,
-    bg3AudienceFlashSrc,
-    bg2MemeSrc,
-    fg3CatSrc,
-    m.buySigns.zIndex,
-    m.flash.zIndex,
-    m.meme.zIndex,
-    m.chartBand.zIndex,
-    m.ring.zIndex,
-    m.lizard.zIndex,
-    m.satoshi.zIndex,
-    m.fg3.zIndex,
-  ])
-
   return (
     <div className="scene" ref={sceneRef}>
       {hudBg ? <img src={hudBg} alt="" className="scene-hud-bg" /> : null}
@@ -287,8 +250,6 @@ export const FightScene = ({
         className="scene-layer scene-audience"
         style={{ ...boxStyle(audienceRect), objectFit: audienceRect.objectFit, objectPosition: audienceRect.objectPosition }}
         draggable={false}
-        onLoad={() => logLayerAsset('scene-audience', 'load', audienceSrc)}
-        onError={() => logLayerAsset('scene-audience', 'error', audienceSrc)}
       />
 
       {showCandleChart
@@ -313,8 +274,6 @@ export const FightScene = ({
                 className="scene-layer scene-bg4-sign"
                 style={bg4Style}
                 draggable={false}
-                onLoad={() => logLayerAsset('scene-bg4-sign', 'load', bg4Src)}
-                onError={() => logLayerAsset('scene-bg4-sign', 'error', bg4Src)}
               />
             )
           })}
@@ -339,8 +298,6 @@ export const FightScene = ({
             className="scene-layer scene-bg3-flash"
             style={bg3Style}
             draggable={false}
-            onLoad={() => logLayerAsset('scene-bg3-flash', 'load', bg3FlashSrc)}
-            onError={() => logLayerAsset('scene-bg3-flash', 'error', bg3FlashSrc)}
           />
         )
       })}
@@ -352,8 +309,6 @@ export const FightScene = ({
           className="scene-layer scene-bg3-flash-audience"
           style={{ ...boxStyle(m.flash), objectFit: m.flash.objectFit }}
           draggable={false}
-          onLoad={() => logLayerAsset('scene-bg3-flash-audience', 'load', bg3AudienceFlashSrc)}
-          onError={() => logLayerAsset('scene-bg3-flash-audience', 'error', bg3AudienceFlashSrc)}
         />
       ) : null}
 
@@ -364,8 +319,6 @@ export const FightScene = ({
           className="scene-layer scene-bg2-meme"
           style={bg2Style}
           draggable={false}
-          onLoad={() => logLayerAsset('scene-bg2-meme', 'load', bg2MemeSrc)}
-          onError={() => logLayerAsset('scene-bg2-meme', 'error', bg2MemeSrc)}
         />
       ) : null}
 
@@ -427,8 +380,6 @@ export const FightScene = ({
           className="scene-layer scene-fg3-cat"
           style={fg3Style}
           draggable={false}
-          onLoad={() => logLayerAsset('scene-fg3-cat', 'load', fg3CatSrc)}
-          onError={() => logLayerAsset('scene-fg3-cat', 'error', fg3CatSrc)}
         />
       ) : null}
     </div>

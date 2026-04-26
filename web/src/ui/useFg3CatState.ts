@@ -72,12 +72,6 @@ export const useFg3CatState = (): Fg3CatState => {
     }
   }, [])
 
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H4', location: 'useFg3CatState.ts:74', message: 'fg3 cat lifecycle state', data: { active: cat.active, direction: cat.direction, frame: cat.frame, xPx: cat.xPx, frameDelayMs: FG3_CAT_FRAME_DELAY_MS, spawnIntervalMs: FG3_CAT_SPAWN_INTERVAL_MS, speedPxPerTick: FG3_CAT_SPEED_PX_PER_TICK }, timestamp: Date.now() }) }).catch(() => {})
-    // #endregion
-  }, [cat.active, cat.direction, cat.frame, cat.xPx])
-
   return {
     active: cat.active,
     direction: cat.direction,

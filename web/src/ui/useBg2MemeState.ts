@@ -199,12 +199,5 @@ export const useBg2MemeState = (
     return () => window.clearTimeout(id)
   }, [activeMeme, visibleChart])
 
-  useEffect(() => {
-    if (!visibleChart && !activeMeme) return
-    // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H3', location: 'useBg2MemeState.ts:157', message: 'bg2 meme sequence state', data: { visibleChart, activeMeme, cooldownMs: BG2_MEME_PRICE_WINDOW_MS }, timestamp: Date.now() }) }).catch(() => {})
-    // #endregion
-  }, [visibleChart, activeMeme])
-
   return { activeMeme }
 }

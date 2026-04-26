@@ -156,13 +156,8 @@ export const useBg3FlashState = ({
       setFlashSpawns([])
       setAudienceFlashUntilMs(0)
       setLastAudienceFlashAtMs(0)
-      return
     }
-
-    // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H2', location: 'useBg3FlashState.ts:agentLog', message: 'bg3 flash ko-gated state', data: { flashActive, tabVisible, spawnCount: flashSpawns.length, audienceFlashUntilMs, frameDelayMs: BG3_FLASH_FRAME_DELAY_MS, frameCount: BG3_FLASH_FRAME_COUNT }, timestamp: Date.now() }) }).catch(() => {})
-    // #endregion
-  }, [flashActive, tabVisible, flashSpawns.length, audienceFlashUntilMs])
+  }, [flashActive, tabVisible])
 
   return { flashSpawns, audienceFlashUntilMs, flashSizePx }
 }

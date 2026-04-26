@@ -142,12 +142,6 @@ function App() {
   const showCandleChart = bg2Visible
   const showBg2Meme = splashDone && !showCandleChart && bg2Meme.activeMeme !== null
 
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7252/ingest/caf88746-b310-4ec2-85db-7a16f13955b8', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e88c71' }, body: JSON.stringify({ sessionId: 'e88c71', runId: 'baseline', hypothesisId: 'H0', location: 'App.tsx:114', message: 'app mounted for debug session', data: { splashDone, bg2Visible }, timestamp: Date.now() }) }).catch(() => {})
-    // #endregion
-  }, [splashDone, bg2Visible])
-
   return (
     <main ref={appShellRef} className="app-shell">
       {!splashDone ? <SplashSequence onDone={onSplashDone} /> : null}
