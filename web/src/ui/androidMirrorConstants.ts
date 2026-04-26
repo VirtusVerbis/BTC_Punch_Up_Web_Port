@@ -7,6 +7,9 @@ export const TITLE_FADE_OUT_MS = 300
 
 export const ANIMATION_FRAME_DELAY_MS = 80
 
+/** Android `MIN_IDLE_AFTER_DEFENSE_MS`. */
+export const MIN_IDLE_AFTER_DEFENSE_MS = 100
+
 export const AUDIENCE_FRAME_DELAY_MS = 4000
 
 export const RING_ROTATE_FREQUENCY_MS = 2 * 60 * 1000

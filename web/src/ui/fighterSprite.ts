@@ -1,4 +1,5 @@
 import type { AttackEvent, DefenseType, FighterName, FighterPose, FighterState, Hand, PunchType } from '../game/types'
+import { damageSpriteFile } from '../game/damageSprites'
 import { punchFrameCount } from '../game/punchFrames'
 import { ANIMATION_FRAME_DELAY_MS } from './androidMirrorConstants'
 import { resolveMobileAssetUrl } from './mobileAssetUrls'
@@ -26,10 +27,20 @@ const defenseBase = (fighter: FighterName, defense: DefenseType): string | null 
   return null
 }
 
-const defenseFile = (fighter: FighterName, defense: DefenseType, nowMs: number): string => {
+const defenseFile = (
+  fighter: FighterName,
+  defense: DefenseType,
+  defenseStripStartTs: number | null,
+  nowMs: number,
+): string => {
   const base = defenseBase(fighter, defense)
   if (!base) return idleFile(fighter, nowMs)
-  const frame = cycle(nowMs, 3)
+  if (defenseStripStartTs === null) {
+    const frame = cycle(nowMs, 3)
+    return `${base}_${frame}.png`
+  }
+  const elapsed = Math.max(0, nowMs - defenseStripStartTs)
+  const frame = Math.min(2, Math.floor(elapsed / ANIMATION_FRAME_DELAY_MS))
   return `${base}_${frame}.png`
 }
 
@@ -62,8 +73,11 @@ export const fighterSpriteIdleForBobbing = (
   pose: FighterPose,
   mode: FighterState['mode'],
   defenseType: DefenseType,
+  damageAnim: FighterState['damageAnim'],
+  pendingDamageAfterDefense: FighterState['pendingDamageAfterDefense'],
   lastAttack: AttackEvent | null,
 ): boolean => {
+  if (damageAnim !== null || pendingDamageAfterDefense !== null) return false
   if (pose === 'fall' || pose === 'knockedDown' || pose === 'rise') return false
   if (pose === 'attacking' && lastAttack?.attacker === fighter) return false
   if (pose === 'defending' || mode === 'defense') {
@@ -77,19 +91,43 @@ export const bothFightersIdleForBobbing = (
   lizard: FighterState,
   lastAttack: AttackEvent | null,
 ): boolean =>
-  fighterSpriteIdleForBobbing('satoshi', satoshi.pose, satoshi.mode, satoshi.defenseType, lastAttack) &&
-  fighterSpriteIdleForBobbing('lizard', lizard.pose, lizard.mode, lizard.defenseType, lastAttack)
+  fighterSpriteIdleForBobbing(
+    'satoshi',
+    satoshi.pose,
+    satoshi.mode,
+    satoshi.defenseType,
+    satoshi.damageAnim,
+    satoshi.pendingDamageAfterDefense,
+    lastAttack,
+  ) &&
+  fighterSpriteIdleForBobbing(
+    'lizard',
+    lizard.pose,
+    lizard.mode,
+    lizard.defenseType,
+    lizard.damageAnim,
+    lizard.pendingDamageAfterDefense,
+    lastAttack,
+  )
 
 export const pickFighterSpriteFile = (
   fighter: FighterName,
   pose: FighterPose,
   mode: 'offense' | 'defense',
   defenseType: DefenseType,
+  damageAnim: FighterState['damageAnim'],
+  defenseStripStartTs: FighterState['defenseStripStartTs'],
   lastAttack: AttackEvent | null,
   nowMs: number,
 ): string => {
   if (pose === 'fall' || pose === 'knockedDown' || pose === 'rise') {
     return koFile(fighter, pose)
+  }
+
+  if (damageAnim !== null) {
+    const elapsed = Math.max(0, nowMs - damageAnim.startTs)
+    const frame = Math.floor(elapsed / ANIMATION_FRAME_DELAY_MS)
+    return damageSpriteFile(fighter, damageAnim.hand, damageAnim.punchType, frame)
   }
 
   if (pose === 'attacking' && lastAttack?.attacker === fighter) {
@@ -102,7 +140,7 @@ export const pickFighterSpriteFile = (
 
   if (pose === 'defending' || mode === 'defense') {
     if (defenseType === 'none') return idleFile(fighter, nowMs)
-    return defenseFile(fighter, defenseType, nowMs)
+    return defenseFile(fighter, defenseType, defenseStripStartTs, nowMs)
   }
 
   return idleFile(fighter, nowMs)
@@ -113,9 +151,14 @@ export const fighterSpriteUrl = (
   pose: FighterPose,
   mode: 'offense' | 'defense',
   defenseType: DefenseType,
+  damageAnim: FighterState['damageAnim'],
+  defenseStripStartTs: FighterState['defenseStripStartTs'],
   lastAttack: AttackEvent | null,
   nowMs: number,
-): string => resolveMobileAssetUrl(pickFighterSpriteFile(fighter, pose, mode, defenseType, lastAttack, nowMs))
+): string =>
+  resolveMobileAssetUrl(
+    pickFighterSpriteFile(fighter, pose, mode, defenseType, damageAnim, defenseStripStartTs, lastAttack, nowMs),
+  )
 
 export const audienceFile = (ringIndex: number, subFrame: number): string =>
   `audience_${subFrame}_r${ringIndex}.png`

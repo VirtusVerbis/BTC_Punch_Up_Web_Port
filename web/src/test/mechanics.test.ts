@@ -1,11 +1,15 @@
-import type { FighterState } from '../game/types'
+import type { FighterState, MarketSnapshot } from '../game/types'
 import {
   applyDamage,
   createEmptyLastPunchUsedAt,
   defenseBlocksPunch,
+  deriveLizardRingMode,
+  deriveSatoshiRingMode,
   nextAttackIfAvailable,
   pickDefenseType,
   pickPunchType,
+  pickPunchTypeFromPercent,
+  resolveDefenseTypeWithCooldown,
   selectDualHandPunch,
 } from '../game/mechanics'
 
@@ -49,7 +53,28 @@ describe('mechanics thresholds', () => {
     expect(selectDualHandPunch(null, null, 'right')).toBeNull()
   })
 
-  const fighterBase = (over: Partial<FighterState>): FighterState => ({
+  test('pickPunchTypeFromPercent returns null for empty hand', () => {
+    expect(pickPunchTypeFromPercent(null)).toBeNull()
+    expect(pickPunchTypeFromPercent(0)).toBeNull()
+  })
+
+  test('ring modes use Binance imbalance only', () => {
+    const m = (bBuy: number, bSell: number): MarketSnapshot => ({
+      binance: { exchange: 'binance', price: 1, buyVolume: bBuy, sellVolume: bSell, updatedAt: 0 },
+      coinbase: { exchange: 'coinbase', price: 1, buyVolume: 999, sellVolume: 0, updatedAt: 0 },
+    })
+    expect(deriveSatoshiRingMode(m(10, 5))).toBe('offense')
+    expect(deriveSatoshiRingMode(m(3, 20))).toBe('defense')
+    expect(deriveLizardRingMode(m(10, 5))).toBe('defense')
+    expect(deriveLizardRingMode(m(3, 20))).toBe('offense')
+  })
+
+  test('resolveDefenseTypeWithCooldown keeps previous type inside cooldown', () => {
+    expect(resolveDefenseTypeWithCooldown('bodyBlock', 'headBlock', 0, 500)).toBe('headBlock')
+    expect(resolveDefenseTypeWithCooldown('bodyBlock', 'headBlock', 0, 1200)).toBe('bodyBlock')
+  })
+
+  const fighterBase = (over: Partial<FighterState> = {}): FighterState => ({
     name: 'satoshi',
     mode: 'offense',
     defenseType: 'none',
@@ -57,6 +82,11 @@ describe('mechanics thresholds', () => {
     damagePoints: 0,
     koLockedUntil: 0,
     lastPunchUsedAt: createEmptyLastPunchUsedAt(),
+    damageAnim: null,
+    defenseStripStartTs: null,
+    defenseCommittedAt: 0,
+    defenseReenterNotBefore: 0,
+    pendingDamageAfterDefense: null,
     ...over,
   })
 
@@ -66,5 +96,10 @@ describe('mechanics thresholds', () => {
     })
     expect(nextAttackIfAvailable(f, 5800, 10)).toBeNull()
     expect(nextAttackIfAvailable(f, 6000, 10)).toBe('jab')
+  })
+
+  test('nextAttackIfAvailable returns null when hand has no volume', () => {
+    const f = fighterBase()
+    expect(nextAttackIfAvailable(f, 1000, null)).toBeNull()
   })
 })

@@ -16,12 +16,17 @@ const fighter = (over: Partial<FighterState>): FighterState => ({
   damagePoints: 0,
   koLockedUntil: 0,
   lastPunchUsedAt: createEmptyLastPunchUsedAt(),
+  damageAnim: null,
+  defenseStripStartTs: null,
+  defenseCommittedAt: 0,
+  defenseReenterNotBefore: 0,
+  pendingDamageAfterDefense: null,
   ...over,
 })
 
 describe('fighterSprite', () => {
   it('picks idle Satoshi frame', () => {
-    const f = pickFighterSpriteFile('satoshi', 'idle', 'offense', 'none', null, 0)
+    const f = pickFighterSpriteFile('satoshi', 'idle', 'offense', 'none', null, null, null, 0)
     expect(f).toMatch(/^satoshi_ready_\d\.png$/)
   })
 
@@ -53,5 +58,19 @@ describe('fighterSprite', () => {
     const sat = fighter({ name: 'satoshi', mode: 'offense', pose: 'attacking', defenseType: 'none' })
     const liz = fighter({ name: 'lizard', mode: 'offense', pose: 'attacking', defenseType: 'none' })
     expect(bothFightersIdleForBobbing(sat, liz, null)).toBe(true)
+  })
+
+  it('pickFighterSpriteFile shows damage strip when damageAnim set', () => {
+    const f = pickFighterSpriteFile(
+      'lizard',
+      'defending',
+      'defense',
+      'bodyBlock',
+      { hand: 'left', punchType: 'jab', startTs: 0 },
+      0,
+      null,
+      40,
+    )
+    expect(f).toBe('lizard_left_small_head_dmg_0.png')
   })
 })

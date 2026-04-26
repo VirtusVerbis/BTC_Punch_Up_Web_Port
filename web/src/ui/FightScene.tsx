@@ -233,10 +233,21 @@ export const FightScene = ({
     satoshi.pose,
     satoshi.mode,
     satoshi.defenseType,
+    satoshi.damageAnim,
+    satoshi.defenseStripStartTs,
     lastAttack,
     nowMs,
   )
-  const lizardSrc = fighterSpriteUrl('lizard', lizard.pose, lizard.mode, lizard.defenseType, lastAttack, nowMs)
+  const lizardSrc = fighterSpriteUrl(
+    'lizard',
+    lizard.pose,
+    lizard.mode,
+    lizard.defenseType,
+    lizard.damageAnim,
+    lizard.defenseStripStartTs,
+    lastAttack,
+    nowMs,
+  )
 
   const hudBg = m.hudBackground ? resolveMobileAssetUrl(m.hudBackground) : null
 

@@ -11,6 +11,11 @@ const fighter = (name: 'satoshi' | 'lizard', over: Partial<FighterState> = {}): 
   damagePoints: 0,
   koLockedUntil: 0,
   lastPunchUsedAt: createEmptyLastPunchUsedAt(),
+  damageAnim: null,
+  defenseStripStartTs: null,
+  defenseCommittedAt: 0,
+  defenseReenterNotBefore: 0,
+  pendingDamageAfterDefense: null,
   ...over,
 })
 
@@ -94,5 +99,54 @@ describe('combat timeline (impact + cooldown)', () => {
     const s = useGameStore.getState()
     expect(s.lastAttack?.landed).toBe(true)
     expect(s.lizard.damagePoints).toBe(1)
+    expect(s.lizard.damageAnim).toEqual({ hand: 'left', punchType: 'jab', startTs: 80 })
+  })
+
+  it('defers damage on wrong block until defense window completes', () => {
+    const seq: PunchSequence = {
+      attacker: 'satoshi',
+      hand: 'left',
+      punchType: 'jab',
+      startTs: 0,
+      impactAt: 80,
+      endTs: 240,
+      impactResolved: false,
+    }
+    useGameStore.setState({
+      satoshi: fighter('satoshi', { mode: 'offense', pose: 'attacking' }),
+      lizard: fighter('lizard', {
+        mode: 'defense',
+        pose: 'defending',
+        defenseType: 'bodyBlock',
+        defenseStripStartTs: 0,
+      }),
+      activePunchSequence: seq,
+      lastAttack: {
+        attacker: 'satoshi',
+        hand: 'left',
+        punchType: 'jab',
+        landed: false,
+        ts: 0,
+        startedTs: 0,
+      },
+    })
+    useGameStore.getState().advanceCombat(80)
+    const mid = useGameStore.getState()
+    expect(mid.lastAttack?.landed).toBe(false)
+    expect(mid.lizard.damagePoints).toBe(0)
+    expect(mid.lizard.pendingDamageAfterDefense).toEqual({
+      hand: 'left',
+      punchType: 'jab',
+      applyAt: 320,
+    })
+
+    useGameStore.getState().advanceCombat(319)
+    expect(useGameStore.getState().lizard.damagePoints).toBe(0)
+
+    useGameStore.getState().advanceCombat(320)
+    const end = useGameStore.getState()
+    expect(end.lizard.damagePoints).toBe(1)
+    expect(end.lizard.pendingDamageAfterDefense).toBeNull()
+    expect(end.lizard.damageAnim).toEqual({ hand: 'left', punchType: 'jab', startTs: 320 })
   })
 })

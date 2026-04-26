@@ -5,6 +5,7 @@ import {
   PUNCH_DAMAGE,
   PUNCH_THRESHOLDS,
 } from '../config/constants'
+import { MIN_IDLE_AFTER_DEFENSE_MS } from '../ui/androidMirrorConstants'
 import type {
   DefenseType,
   FighterState,
@@ -30,7 +31,9 @@ const toPercent = (value: number, maxValue: number): number => {
   return Math.max(0, Math.min(100, Math.round((value / maxValue) * 100)))
 }
 
-export const pickPunchType = (percent: number): PunchType => {
+/** Android `getPunchTypeFromVolume`: null when no positive volume or max. */
+export const pickPunchTypeFromPercent = (percent: number | null): PunchType | null => {
+  if (percent === null || percent <= 0) return null
   for (const band of PUNCH_THRESHOLDS) {
     if (percent <= band.maxPercent) {
       return band.type
@@ -38,6 +41,8 @@ export const pickPunchType = (percent: number): PunchType => {
   }
   return 'uppercut'
 }
+
+export const pickPunchType = (percent: number): PunchType => pickPunchTypeFromPercent(percent) ?? 'jab'
 
 export const pickDefenseType = (
   binanceBuyPercent: number,
@@ -57,6 +62,45 @@ export const pickDefenseType = (
     return 'dodgeRight'
   }
   return 'none'
+}
+
+const DEFENSE_SWITCH_COOLDOWN_MS: Record<Exclude<DefenseType, 'none'>, number> = {
+  headBlock: 1000,
+  bodyBlock: 1000,
+  dodgeLeft: 1000,
+  dodgeRight: 1000,
+}
+
+/** Android: keep previous defense type if still inside its cooldown when raw type changes. */
+export const resolveDefenseTypeWithCooldown = (
+  raw: DefenseType,
+  effective: DefenseType,
+  defenseCommittedAt: number,
+  ts: number,
+): DefenseType => {
+  if (raw === effective) return effective
+  if (effective !== 'none' && ts - defenseCommittedAt < DEFENSE_SWITCH_COOLDOWN_MS[effective]) {
+    return effective
+  }
+  return raw
+}
+
+/** Android: after leaving defense mode, suppress non-`none` defense briefly while still in offense. */
+export const gateDefenseAfterLeavingDefense = (
+  mode: Mode,
+  rawDefense: DefenseType,
+  prevMode: Mode,
+  ts: number,
+  prevReenterNotBefore: number,
+): { defense: DefenseType; reenterNotBefore: number } => {
+  let reenterNotBefore = prevReenterNotBefore
+  if (prevMode === 'defense' && mode === 'offense') {
+    reenterNotBefore = ts + MIN_IDLE_AFTER_DEFENSE_MS
+  }
+  if (mode === 'offense' && rawDefense !== 'none' && ts < reenterNotBefore) {
+    return { defense: 'none', reenterNotBefore }
+  }
+  return { defense: rawDefense, reenterNotBefore }
 }
 
 export const defenseBlocksPunch = (
@@ -79,15 +123,30 @@ export const defenseBlocksPunch = (
 export const deriveFighterMode = (buyVolume: number, sellVolume: number): Mode =>
   buyVolume > sellVolume ? 'offense' : 'defense'
 
-export const getHandPercents = (market: MarketSnapshot, volumeType: 'buy' | 'sell') => {
+/** Satoshi ring mode: Binance buy vs sell only (Android `isBinanceDefense` gate). */
+export const deriveSatoshiRingMode = (market: MarketSnapshot): Mode =>
+  deriveFighterMode(market.binance.buyVolume, market.binance.sellVolume)
+
+/** Lizard ring mode: opposite of Binance imbalance (Android `isLizardDefense = !isBinanceDefense`). */
+export const deriveLizardRingMode = (market: MarketSnapshot): Mode =>
+  deriveFighterMode(market.binance.sellVolume, market.binance.buyVolume)
+
+export interface HandPercents {
+  leftPercent: number | null
+  rightPercent: number | null
+}
+
+export const getHandPercents = (market: MarketSnapshot, volumeType: 'buy' | 'sell'): HandPercents => {
   const binanceVolume = volumeType === 'buy' ? market.binance.buyVolume : market.binance.sellVolume
   const coinbaseVolume =
     volumeType === 'buy' ? market.coinbase.buyVolume : market.coinbase.sellVolume
-  const maxVolume = Math.max(binanceVolume, coinbaseVolume, 1)
-
+  const maxVolume = Math.max(binanceVolume, coinbaseVolume)
+  if (maxVolume <= 0) {
+    return { leftPercent: null, rightPercent: null }
+  }
   return {
-    leftPercent: toPercent(binanceVolume, maxVolume),
-    rightPercent: toPercent(coinbaseVolume, maxVolume),
+    leftPercent: binanceVolume > 0 ? toPercent(binanceVolume, maxVolume) : null,
+    rightPercent: coinbaseVolume > 0 ? toPercent(coinbaseVolume, maxVolume) : null,
   }
 }
 
@@ -103,18 +162,19 @@ export const selectDualHandPunch = (
     return { hand: 'left', punchType: left }
   }
   if (left !== null) return { hand: 'left', punchType: left }
-  return { hand: 'right', punchType: right! }
+  return { hand: 'right', punchType: right as PunchType }
 }
 
 export const nextAttackIfAvailable = (
   fighter: FighterState,
   ts: number,
-  handPercent: number,
+  handPercent: number | null,
 ): PunchType | null => {
   if (ts < fighter.koLockedUntil) {
     return null
   }
-  const punchType = pickPunchType(handPercent)
+  const punchType = pickPunchTypeFromPercent(handPercent)
+  if (punchType === null) return null
   const cooldown = PUNCH_COOLDOWNS_MS[punchType]
   const lastUsed = fighter.lastPunchUsedAt[punchType]
   if (lastUsed > 0 && ts - lastUsed < cooldown) {

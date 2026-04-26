@@ -5,14 +5,18 @@ import {
   computeKoLockUntil,
   createEmptyLastPunchUsedAt,
   defenseBlocksPunch,
-  deriveFighterMode,
+  gateDefenseAfterLeavingDefense,
   getHandPercents,
   nextAttackIfAvailable,
   pickDefenseType,
+  resolveDefenseTypeWithCooldown,
+  deriveLizardRingMode,
+  deriveSatoshiRingMode,
   selectDualHandPunch,
 } from './mechanics'
 import { computePunchImpactAt, computePunchSequenceEndAt } from './punchFrames'
-import { PUNCH_PRIORITY_HAND } from '../ui/androidMirrorConstants'
+import { damageAnimationDurationMs, DAMAGE_COMPLETION_SAFETY_TIMEOUT_MS } from './damageSprites'
+import { ANIMATION_FRAME_DELAY_MS, PUNCH_PRIORITY_HAND } from '../ui/androidMirrorConstants'
 import type { AttackEvent, FighterState, MarketSnapshot, PunchSequence } from './types'
 
 interface GameState {
@@ -32,6 +36,8 @@ interface GameState {
   resetDamage: () => void
 }
 
+const DEFENSE_COMPLETION_MS = Math.max(3 * ANIMATION_FRAME_DELAY_MS, 3 * ANIMATION_FRAME_DELAY_MS)
+
 const createFighter = (name: FighterState['name']): FighterState => ({
   name,
   mode: 'defense',
@@ -40,6 +46,11 @@ const createFighter = (name: FighterState['name']): FighterState => ({
   damagePoints: 0,
   koLockedUntil: 0,
   lastPunchUsedAt: createEmptyLastPunchUsedAt(),
+  damageAnim: null,
+  defenseStripStartTs: null,
+  defenseCommittedAt: 0,
+  defenseReenterNotBefore: 0,
+  pendingDamageAfterDefense: null,
 })
 
 const nextPose = (fighter: FighterState, ts: number): FighterState['pose'] => {
@@ -58,17 +69,76 @@ const nextPose = (fighter: FighterState, ts: number): FighterState['pose'] => {
   return 'rise'
 }
 
-const buildUpdatedFighter = (
-  fighter: FighterState,
+const defenderBusy = (f: FighterState): boolean =>
+  f.damageAnim !== null || f.pendingDamageAfterDefense !== null
+
+const clearDamageAnimIfDone = (f: FighterState, ts: number): FighterState => {
+  if (!f.damageAnim) return f
+  const dur = damageAnimationDurationMs(f.name, f.damageAnim.punchType, f.damageAnim.hand)
+  const end = f.damageAnim.startTs + dur
+  if (ts >= end || ts >= f.damageAnim.startTs + DAMAGE_COMPLETION_SAFETY_TIMEOUT_MS) {
+    return { ...f, damageAnim: null }
+  }
+  return f
+}
+
+const stepFighterFromMarket = (
+  prev: FighterState,
   mode: FighterState['mode'],
-  defenseType: FighterState['defenseType'],
+  rawDefenseFromPercents: FighterState['defenseType'],
   ts: number,
-): FighterState => ({
-  ...fighter,
-  mode,
-  defenseType,
-  pose: nextPose({ ...fighter, mode }, ts),
-})
+): FighterState => {
+  const { defense: gated, reenterNotBefore } = gateDefenseAfterLeavingDefense(
+    mode,
+    rawDefenseFromPercents,
+    prev.mode,
+    ts,
+    prev.defenseReenterNotBefore,
+  )
+  const effective = resolveDefenseTypeWithCooldown(gated, prev.defenseType, prev.defenseCommittedAt, ts)
+  const defenseCommittedAt = effective === prev.defenseType ? prev.defenseCommittedAt : ts
+
+  let defenseStripStartTs = prev.defenseStripStartTs
+  if (mode === 'defense' && effective !== 'none') {
+    if (prev.mode !== 'defense' || prev.defenseType !== effective || prev.defenseStripStartTs === null) {
+      defenseStripStartTs = ts
+    }
+  } else {
+    defenseStripStartTs = null
+  }
+
+  return {
+    ...prev,
+    mode,
+    defenseType: effective,
+    defenseCommittedAt,
+    defenseReenterNotBefore: reenterNotBefore,
+    defenseStripStartTs,
+    pose: nextPose({ ...prev, mode }, ts),
+  }
+}
+
+const applyKoFromDamage = (
+  fighter: FighterState,
+  ts: number,
+  damageAfter: number,
+): { fighter: FighterState; scoredKo: 'satoshi' | 'lizard' | null } => {
+  if (damageAfter < MAX_DAMAGE_POINTS) {
+    return { fighter: { ...fighter, damagePoints: damageAfter }, scoredKo: null }
+  }
+  const koFighter: FighterState = {
+    ...fighter,
+    damagePoints: 0,
+    koLockedUntil: computeKoLockUntil(ts),
+    pose: 'fall',
+    damageAnim: null,
+    pendingDamageAfterDefense: null,
+  }
+  return {
+    fighter: koFighter,
+    scoredKo: fighter.name === 'lizard' ? 'satoshi' : 'lizard',
+  }
+}
 
 export const useGameStore = create<GameState>((set, get) => ({
   satoshi: createFighter('satoshi'),
@@ -81,25 +151,81 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   advanceCombat: (ts = Date.now()) => {
     set((state) => {
-      const seq0 = state.activePunchSequence
-      if (!seq0) return {}
-
-      let seq = seq0
-      let satoshi = state.satoshi
-      let lizard = state.lizard
-      let lastAttack = state.lastAttack
+      let satoshi = clearDamageAnimIfDone(state.satoshi, ts)
+      let lizard = clearDamageAnimIfDone(state.lizard, ts)
       let satoshiKoCount = state.satoshiKoCount
       let lizardKoCount = state.lizardKoCount
       let changed = false
+
+      const applyPending = (def: FighterState): FighterState => {
+        const p = def.pendingDamageAfterDefense
+        if (!p || ts < p.applyAt) return def
+        changed = true
+        const without = { ...def, pendingDamageAfterDefense: null }
+        const nextPts = applyDamage(without.damagePoints, p.punchType)
+        const { fighter: after, scoredKo } = applyKoFromDamage(without, ts, nextPts)
+        if (scoredKo === 'satoshi') satoshiKoCount += 1
+        if (scoredKo === 'lizard') lizardKoCount += 1
+        if (scoredKo) {
+          return after
+        }
+        return {
+          ...after,
+          damageAnim: { hand: p.hand, punchType: p.punchType, startTs: ts },
+        }
+      }
+
+      satoshi = applyPending(satoshi)
+      lizard = applyPending(lizard)
+
+      const seq0 = state.activePunchSequence
+      if (!seq0) {
+        if (changed) return { satoshi, lizard, satoshiKoCount, lizardKoCount }
+        return {}
+      }
+
+      let seq = seq0
+      let lastAttack = state.lastAttack
 
       if (!seq.impactResolved && ts >= seq.impactAt) {
         changed = true
         const defenderName: 'lizard' | 'satoshi' = seq.attacker === 'satoshi' ? 'lizard' : 'satoshi'
         let defender = defenderName === 'lizard' ? lizard : satoshi
-        const landed = !defenseBlocksPunch(defender.defenseType, seq.punchType, seq.hand)
-        defender = landed
-          ? { ...defender, damagePoints: applyDamage(defender.damagePoints, seq.punchType) }
-          : { ...defender }
+
+        const blocks = defenseBlocksPunch(defender.defenseType, seq.punchType, seq.hand)
+        const wrongBlock =
+          defender.mode === 'defense' && defender.defenseType !== 'none' && !blocks
+
+        let landed = false
+        if (blocks) {
+          landed = false
+          defender = { ...defender }
+        } else if (wrongBlock) {
+          landed = false
+          const stripStart = defender.defenseStripStartTs ?? ts
+          defender = {
+            ...defender,
+            pendingDamageAfterDefense: {
+              hand: seq.hand,
+              punchType: seq.punchType,
+              applyAt: Math.max(ts, stripStart) + DEFENSE_COMPLETION_MS,
+            },
+          }
+        } else {
+          landed = true
+          const nextPts = applyDamage(defender.damagePoints, seq.punchType)
+          const { fighter: after, scoredKo } = applyKoFromDamage(defender, ts, nextPts)
+          defender = after
+          if (scoredKo === 'satoshi') satoshiKoCount += 1
+          if (scoredKo === 'lizard') lizardKoCount += 1
+          if (!scoredKo) {
+            defender = {
+              ...defender,
+              damageAnim: { hand: seq.hand, punchType: seq.punchType, startTs: ts },
+            }
+          }
+        }
+
         if (defenderName === 'lizard') lizard = defender
         else satoshi = defender
 
@@ -112,27 +238,6 @@ export const useGameStore = create<GameState>((set, get) => ({
           startedTs: seq.startTs,
         }
         seq = { ...seq, impactResolved: true }
-
-        const lizardKo = lizard.damagePoints >= MAX_DAMAGE_POINTS
-        const satoshiKo = satoshi.damagePoints >= MAX_DAMAGE_POINTS
-        if (lizardKo) satoshiKoCount = state.satoshiKoCount + 1
-        if (satoshiKo) lizardKoCount = state.lizardKoCount + 1
-        if (satoshiKo) {
-          satoshi = {
-            ...satoshi,
-            damagePoints: 0,
-            koLockedUntil: computeKoLockUntil(ts),
-            pose: 'fall',
-          }
-        }
-        if (lizardKo) {
-          lizard = {
-            ...lizard,
-            damagePoints: 0,
-            koLockedUntil: computeKoLockUntil(ts),
-            pose: 'fall',
-          }
-        }
       }
 
       let activePunchSequence: PunchSequence | null = seq
@@ -167,17 +272,40 @@ export const useGameStore = create<GameState>((set, get) => ({
     const buyPercents = getHandPercents(market, 'buy')
     const sellPercents = getHandPercents(market, 'sell')
 
-    let satoshi = buildUpdatedFighter(
-      current.satoshi,
-      deriveFighterMode(market.binance.buyVolume + market.coinbase.buyVolume, market.binance.sellVolume + market.coinbase.sellVolume),
-      pickDefenseType(buyPercents.leftPercent, buyPercents.rightPercent),
+    let satoshi = clearDamageAnimIfDone(current.satoshi, ts)
+    let lizard = clearDamageAnimIfDone(current.lizard, ts)
+    let satoshiKoCount = current.satoshiKoCount
+    let lizardKoCount = current.lizardKoCount
+
+    const applyPendingOpen = (def: FighterState): FighterState => {
+      const p = def.pendingDamageAfterDefense
+      if (!p || ts < p.applyAt) return def
+      const without = { ...def, pendingDamageAfterDefense: null }
+      const nextPts = applyDamage(without.damagePoints, p.punchType)
+      const { fighter: after, scoredKo } = applyKoFromDamage(without, ts, nextPts)
+      if (scoredKo === 'satoshi') satoshiKoCount += 1
+      if (scoredKo === 'lizard') lizardKoCount += 1
+      if (scoredKo) return after
+      return {
+        ...after,
+        damageAnim: { hand: p.hand, punchType: p.punchType, startTs: ts },
+      }
+    }
+
+    satoshi = applyPendingOpen(satoshi)
+    lizard = applyPendingOpen(lizard)
+
+    satoshi = stepFighterFromMarket(
+      satoshi,
+      deriveSatoshiRingMode(market),
+      pickDefenseType(buyPercents.leftPercent ?? 0, buyPercents.rightPercent ?? 0),
       ts,
     )
 
-    let lizard = buildUpdatedFighter(
-      current.lizard,
-      deriveFighterMode(market.binance.sellVolume + market.coinbase.sellVolume, market.binance.buyVolume + market.coinbase.buyVolume),
-      pickDefenseType(sellPercents.leftPercent, sellPercents.rightPercent),
+    lizard = stepFighterFromMarket(
+      lizard,
+      deriveLizardRingMode(market),
+      pickDefenseType(sellPercents.leftPercent ?? 0, sellPercents.rightPercent ?? 0),
       ts,
     )
 
@@ -188,7 +316,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       const satoshiLeftPunch = nextAttackIfAvailable(satoshi, ts, buyPercents.leftPercent)
       const satoshiRightPunch = nextAttackIfAvailable(satoshi, ts, buyPercents.rightPercent)
       const satoshiChosen = selectDualHandPunch(satoshiLeftPunch, satoshiRightPunch, PUNCH_PRIORITY_HAND)
-      if (satoshi.mode === 'offense' && satoshiChosen && ts >= opponentLizardKoUntil) {
+      if (
+        satoshi.mode === 'offense' &&
+        satoshiChosen &&
+        ts >= opponentLizardKoUntil &&
+        !defenderBusy(lizard)
+      ) {
         const { hand: satoshiHand, punchType: satoshiPunch } = satoshiChosen
         const impactAt = computePunchImpactAt(ts, 'satoshi', satoshiHand, satoshiPunch)
         const endTs = computePunchSequenceEndAt(ts, 'satoshi', satoshiHand, satoshiPunch)
@@ -214,7 +347,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         const lizardLeftPunch = nextAttackIfAvailable(lizard, ts, sellPercents.leftPercent)
         const lizardRightPunch = nextAttackIfAvailable(lizard, ts, sellPercents.rightPercent)
         const lizardChosen = selectDualHandPunch(lizardLeftPunch, lizardRightPunch, PUNCH_PRIORITY_HAND)
-        if (lizard.mode === 'offense' && lizardChosen && ts >= opponentSatoshiKoUntil) {
+        if (
+          lizard.mode === 'offense' &&
+          lizardChosen &&
+          ts >= opponentSatoshiKoUntil &&
+          !defenderBusy(satoshi)
+        ) {
           const { hand: lizardHand, punchType: lizardPunch } = lizardChosen
           const impactAt = computePunchImpactAt(ts, 'lizard', lizardHand, lizardPunch)
           const endTs = computePunchSequenceEndAt(ts, 'lizard', lizardHand, lizardPunch)
@@ -240,7 +378,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    set({ satoshi, lizard, lastAttack, activePunchSequence })
+    set({ satoshi, lizard, lastAttack, activePunchSequence, satoshiKoCount, lizardKoCount })
   },
 
   toggleCharacterAlignment: () => {
@@ -249,8 +387,18 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resetDamage: () => {
     set((state) => ({
-      satoshi: { ...state.satoshi, damagePoints: 0 },
-      lizard: { ...state.lizard, damagePoints: 0 },
+      satoshi: {
+        ...state.satoshi,
+        damagePoints: 0,
+        damageAnim: null,
+        pendingDamageAfterDefense: null,
+      },
+      lizard: {
+        ...state.lizard,
+        damagePoints: 0,
+        damageAnim: null,
+        pendingDamageAfterDefense: null,
+      },
     }))
   },
 }))
