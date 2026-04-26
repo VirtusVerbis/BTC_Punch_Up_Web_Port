@@ -29,7 +29,7 @@ body {
   align-items: flex-start;
   justify-content: center;
   //padding: 1rem;
-  padding: 0 1rem 1rem;
+  padding: 1px 1rem 1rem;
   position: relative;
 }
 
