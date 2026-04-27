@@ -79,7 +79,7 @@ export const mobileAssetManifest = {
   ring: {
     zIndex: 7,
     left: 0,
-    top: 0.15,
+    top: 0.12,  //0.15
     width: 1,
     height: 1,
     objectFit: 'contain' as const,

@@ -105,8 +105,9 @@ function App() {
   const koLockedUntil = Math.max(satoshi.koLockedUntil, lizard.koLockedUntil)
   const ringIndex = useRingRotation(koLockedUntil)
   const audienceSubFrame = useAudienceSubFrame()
-  const bg2Visible = useBg2ChartVisible()
-  const bg2Meme = useBg2MemeState(bg2Visible, feed.market.binance.price, feed.market.coinbase.price)
+  const bg2Meme = useBg2MemeState(feed.market.binance.price, feed.market.coinbase.price)
+  const hasActiveBg2Meme = bg2Meme.activeMeme !== null
+  const bg2Visible = useBg2ChartVisible(hasActiveBg2Meme)
   const koKnockedDown = satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown'
   const bg3 = useBg3FlashState({
     flashActive: koKnockedDown,
@@ -158,7 +159,7 @@ function App() {
   }, [])
 
   const showCandleChart = bg2Visible
-  const showBg2Meme = splashDone && !showCandleChart && bg2Meme.activeMeme !== null
+  const showBg2Meme = splashDone && hasActiveBg2Meme
 
   return (
     <main ref={appShellRef} className="app-shell">

@@ -75,7 +75,6 @@ const delayMsFor = (sequenceId: Bg2MemeSequenceId): number => {
 
 /** Mobile-style bg2 lifecycle: chart windows + one active price-triggered meme sequence. */
 export const useBg2MemeState = (
-  visibleChart: boolean,
   binancePrice: number,
   coinbasePrice: number,
 ): Bg2MemeState => {
@@ -186,7 +185,7 @@ export const useBg2MemeState = (
   }, [activeMeme, binancePrice, coinbasePrice])
 
   useEffect(() => {
-    if (activeMeme === null || visibleChart) return
+    if (activeMeme === null) return
     const sequenceId = activeMeme.sequenceId
     const frameCount = frameCountFor(sequenceId)
     const id = window.setTimeout(() => {
@@ -197,7 +196,7 @@ export const useBg2MemeState = (
       })
     }, delayMsFor(sequenceId))
     return () => window.clearTimeout(id)
-  }, [activeMeme, visibleChart])
+  }, [activeMeme])
 
   return { activeMeme }
 }

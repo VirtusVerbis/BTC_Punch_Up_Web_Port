@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BG2_SHOW_INTERVAL_MS, BG2_VISIBLE_DURATION_MS } from './androidMirrorConstants'
 
 /** Periodic candle chart visibility (Android BG2 `MainActivity` LaunchedEffect); pauses when tab hidden (`isVisible` parity). */
-export const useBg2ChartVisible = (): boolean => {
+export const useBg2ChartVisible = (paused = false): boolean => {
   const [visible, setVisible] = useState(false)
   const [tabVisible, setTabVisible] = useState(
     () => typeof document === 'undefined' || document.visibilityState === 'visible',
@@ -16,7 +16,7 @@ export const useBg2ChartVisible = (): boolean => {
   }, [])
 
   useEffect(() => {
-    if (!tabVisible) {
+    if (!tabVisible || paused) {
       setVisible(false)
       return
     }
@@ -49,7 +49,7 @@ export const useBg2ChartVisible = (): boolean => {
       cancelled = true
       if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId)
     }
-  }, [tabVisible])
+  }, [tabVisible, paused])
 
   return visible
 }

@@ -23,9 +23,9 @@ export const BG2_CHART_HEIGHT_FRACTION = 0.495
 /** Android `BG2_MAX_CANDLES`: max 1m candles kept / requested for BG1 chart. */
 export const BG2_MAX_CANDLES = 200
 
-export const BG2_MEME_PRICE_WINDOW_MS = 60_000
+export const BG2_MEME_PRICE_WINDOW_MS = 60_000  //this controls the look back into history window (you can decrease for testing say 1000ms))
 
-export const BG2_MEME_FRAME_DELAY_MS = 120
+//export const BG2_MEME_FRAME_DELAY_MS = 120   //not being used here or in mobile app
 export const BG2_MEME_CYCLE_FRAMES = 40
 export const BG2_DCB_MIN_FRAME_INTERVAL_MS = 80
 export const BG2_DCB_FRAME_DELAY_MS = 250
@@ -56,18 +56,18 @@ export const BG2_FR_TOP_OFFSET_FRACTION = 0.065
 export const BG2_FR_ASPECT_HEIGHT_PER_WIDTH = 1.0
 
 export const BG2_ARROW_UP_DISPLAY_MS = 10_000
-export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT = 0.00000000001 //0.1
-export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT_MAX = 999999//0.9999
+export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT = 0.1
+export const BG2_ARROW_UP_PRICE_INCREASE_PERCENT_MAX = 0.9999
 /** Align with candle chart band top (`BG2_CHART_TOP_OFFSET_FRACTION`); tall aspect fills downward. */
-export const BG2_ARROW_UP_TOP_OFFSET_FRACTION = 0.13
-export const BG2_ARROW_UP_ASPECT_HEIGHT_PER_WIDTH = 3.5
+export const BG2_ARROW_UP_TOP_OFFSET_FRACTION = 0.06//0.13
+export const BG2_ARROW_UP_ASPECT_HEIGHT_PER_WIDTH = 1 //3.5
 
 export const BG2_ARROW_DOWN_DISPLAY_MS = 10_000
-export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT = 0.00000000001 //0.1
-export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT_MAX = 999999//0.9999
+export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT = 0.1
+export const BG2_ARROW_DOWN_PRICE_DROP_PERCENT_MAX = 0.9999
 /** Same vertical anchor as arrow up + chart band. */
-export const BG2_ARROW_DOWN_TOP_OFFSET_FRACTION = 0.13
-export const BG2_ARROW_DOWN_ASPECT_HEIGHT_PER_WIDTH = 3.5
+export const BG2_ARROW_DOWN_TOP_OFFSET_FRACTION = 0.06//0.13
+export const BG2_ARROW_DOWN_ASPECT_HEIGHT_PER_WIDTH = 1 //3.5
 
 export const BG4_SIGN_FRAME_DELAY_MS = 600
 export const BG4_SIGN_SPAWN_INTERVAL_MS = 60_000
@@ -138,10 +138,10 @@ export const SCALE_SMALLER_PERCENT_LIZARD = 5
 export const SCALE_LARGER_PERCENT_LIZARD = 20
 
 /** Sprite placement (fractions of stage height/width), from Android constants. */
-export const SATOSHI_Y_POSITION = 0.7
+export const SATOSHI_Y_POSITION = 0.68//0.7
 export const SATOSHI_X_POSITION = 0.5
-export const LIZARD_Y_POSITION = 0.66
+export const LIZARD_Y_POSITION = 0.64//0.66
 export const LIZARD_X_POSITION = 0.5
 
-export const SATOSHI_SCALE = 4.5//3.5
-export const LIZARD_SCALE = 5
+export const SATOSHI_SCALE = 5//4.8//4.5
+export const LIZARD_SCALE = 5.5//5.3//5
