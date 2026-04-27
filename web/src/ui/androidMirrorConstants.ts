@@ -86,6 +86,17 @@ export const BG3_FLASH_SPAWN_WAVE_DELAY_MS = 550
 export const BG3_FLASH_AUDIENCE_MIN_INTERVAL_MS = 334
 export const BG3_FLASH_SIZE_DP = 64
 
+/** Android `VIDEO_OVERLAY_OFFSET_FROM_TOP_DP`. */
+export const VIDEO_OVERLAY_OFFSET_FROM_TOP_DP = 610//100
+/** Android `VIDEO_OVERLAY_AUTO_SPAWN_DELAY_MS`. */
+export const VIDEO_OVERLAY_AUTO_SPAWN_DELAY_MS = 1000//15 * 60 * 1000
+/** Android `VIDEO_OVERLAY_SPAWN_INTERVAL_MS`. */
+export const VIDEO_OVERLAY_SPAWN_INTERVAL_MS = 1000//15 * 60 * 1000
+/** Android video box height: ~40% of screen. */
+export const VIDEO_OVERLAY_VISIBLE_HEIGHT_FRACTION = 0.835//0.4
+/** Mobile defaults to muted until user enables sound. */
+export const VIDEO_OVERLAY_DEFAULT_MUTED = true
+
 /** Android parity: one cat at a time, spawn roughly every 15 minutes. */
 export const FG3_CAT_SPAWN_INTERVAL_MS = 15 * 60 * 1000
 /** Android parity: cat movement step applied on each animation tick. */

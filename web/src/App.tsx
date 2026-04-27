@@ -16,6 +16,8 @@ import { useBg4SignState } from './ui/useBg4SignState'
 import { useFg3CatState } from './ui/useFg3CatState'
 import { ANIMATION_FRAME_DELAY_MS, BG2_MAX_CANDLES } from './ui/androidMirrorConstants'
 import { useRingRotation } from './ui/useRingRotation'
+import { useVideoOverlayState } from './ui/useVideoOverlayState'
+import { VideoOverlay } from './ui/VideoOverlay'
 
 const emptyMarket = (): MarketFeedUpdate['market'] => ({
   binance: {
@@ -107,7 +109,9 @@ function App() {
   const audienceSubFrame = useAudienceSubFrame()
   const bg2Meme = useBg2MemeState(feed.market.binance.price, feed.market.coinbase.price)
   const hasActiveBg2Meme = bg2Meme.activeMeme !== null
-  const bg2Visible = useBg2ChartVisible(hasActiveBg2Meme)
+  const videoOverlay = useVideoOverlayState()
+  const isVideoActive = videoOverlay.isVideoActive
+  const bg2Visible = useBg2ChartVisible(hasActiveBg2Meme || isVideoActive)
   const koKnockedDown = satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown'
   const bg3 = useBg3FlashState({
     flashActive: koKnockedDown,
@@ -158,8 +162,8 @@ function App() {
     return () => window.clearInterval(id)
   }, [])
 
-  const showCandleChart = bg2Visible
-  const showBg2Meme = splashDone && hasActiveBg2Meme
+  const showCandleChart = bg2Visible && !isVideoActive
+  const showBg2Meme = splashDone && hasActiveBg2Meme && !isVideoActive
 
   return (
     <main ref={appShellRef} className="app-shell">
@@ -205,6 +209,17 @@ function App() {
               onTimeClick={toggleCharacterAlignment}
               status={feed.status}
             />
+            {videoOverlay.active ? (
+              <VideoOverlay
+                videoId={videoOverlay.active.videoId}
+                soundEnabled={videoOverlay.soundEnabled}
+                onEnded={videoOverlay.completeActiveVideo}
+                onPlaybackError={videoOverlay.failActiveVideo}
+                onClose={videoOverlay.completeActiveVideo}
+                sceneWidthPx={sceneWidthPx}
+                sceneHeightPx={sceneHeightPx}
+              />
+            ) : null}
           </Stage>
         </div>
 
