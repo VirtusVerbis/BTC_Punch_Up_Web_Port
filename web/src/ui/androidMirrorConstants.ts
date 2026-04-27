@@ -87,11 +87,13 @@ export const BG3_FLASH_AUDIENCE_MIN_INTERVAL_MS = 334
 export const BG3_FLASH_SIZE_DP = 64
 
 /** Android `VIDEO_OVERLAY_OFFSET_FROM_TOP_DP`. */
-export const VIDEO_OVERLAY_OFFSET_FROM_TOP_DP = 610//100
+export const VIDEO_OVERLAY_OFFSET_FROM_TOP_DP = 260//100
+/** Web: fixed stage-coordinate top anchor so Y stays stable during resize. */
+export const VIDEO_OVERLAY_TOP_PX_WEB = VIDEO_OVERLAY_OFFSET_FROM_TOP_DP
 /** Android `VIDEO_OVERLAY_AUTO_SPAWN_DELAY_MS`. */
-export const VIDEO_OVERLAY_AUTO_SPAWN_DELAY_MS = 1000//15 * 60 * 1000
+export const VIDEO_OVERLAY_AUTO_SPAWN_DELAY_MS = 15 * 60 * 1000
 /** Android `VIDEO_OVERLAY_SPAWN_INTERVAL_MS`. */
-export const VIDEO_OVERLAY_SPAWN_INTERVAL_MS = 1000//15 * 60 * 1000
+export const VIDEO_OVERLAY_SPAWN_INTERVAL_MS = 15 * 60 * 1000
 /** Android video box height: ~40% of screen. */
 export const VIDEO_OVERLAY_VISIBLE_HEIGHT_FRACTION = 0.835//0.4
 /** Mobile defaults to muted until user enables sound. */

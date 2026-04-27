@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import {
-  VIDEO_OVERLAY_OFFSET_FROM_TOP_DP,
-} from './androidMirrorConstants'
-import { REFERENCE_WIDTH } from '../config/constants'
+import { VIDEO_OVERLAY_TOP_PX_WEB } from './androidMirrorConstants'
 
 interface VideoOverlayProps {
   videoId: string
@@ -68,7 +65,6 @@ export function VideoOverlay({
   onPlaybackError,
   onClose,
   sceneWidthPx,
-  sceneHeightPx,
 }: VideoOverlayProps) {
   const playerId = useMemo(
     () => `yt-overlay-${videoId}-${Math.random().toString(36).slice(2, 8)}`,
@@ -127,11 +123,10 @@ export function VideoOverlay({
     }
   }, [soundEnabled])
 
-  const desiredTopPx = (VIDEO_OVERLAY_OFFSET_FROM_TOP_DP * sceneWidthPx) / REFERENCE_WIDTH
+  const desiredTopPx = VIDEO_OVERLAY_TOP_PX_WEB
   const frameWidthPx = sceneWidthPx
   const frameHeightPx = (frameWidthPx * 9) / 16
-  const maxTopToFitPx = Math.max(0, sceneHeightPx - frameHeightPx)
-  const topPx = Math.min(desiredTopPx, maxTopToFitPx)
+  const topPx = desiredTopPx
   const heightPx = frameHeightPx
 
   return (
