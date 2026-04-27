@@ -48,3 +48,6 @@ Thumbs.db
 
 # Local Android reference clone (not part of web app source)
 .reference-android/
+
+# Local Cursor rule for GitHub smoke test (project-local helper)
+.cursor/rules/github-access-smoke-test.mdc

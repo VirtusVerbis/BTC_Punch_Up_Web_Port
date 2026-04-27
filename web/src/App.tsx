@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { REFERENCE_HEIGHT, REFERENCE_WIDTH } from './config/constants'
 import { fetchBinanceBtc1mKlines, type Candle } from './data/candles'
 import { BlockHeightService, type BlockState } from './data/blockHeight'
@@ -60,12 +60,30 @@ const GitHubMark = () => (
 
 function App() {
   const appShellRef = useRef<HTMLElement | null>(null)
+  const stageAnchorRef = useRef<HTMLDivElement | null>(null)
   const [splashDone, setSplashDone] = useState(false)
   const onSplashDone = useCallback(() => setSplashDone(true), [])
 
   const [feed, setFeed] = useState<MarketFeedUpdate>(initialFeedUpdate)
   const [blockState, setBlockState] = useState<BlockState>(initialBlockState)
   const [candles, setCandles] = useState<Candle[]>([])
+  const [sceneWidthPx, setSceneWidthPx] = useState(REFERENCE_WIDTH)
+  const [sceneHeightPx, setSceneHeightPx] = useState(REFERENCE_HEIGHT)
+
+  useLayoutEffect(() => {
+    const el = stageAnchorRef.current
+    if (!el) return
+    const measure = () => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      setSceneWidthPx(w > 0 ? w : REFERENCE_WIDTH)
+      setSceneHeightPx(h > 0 ? h : REFERENCE_HEIGHT)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const satoshi = useGameStore((state) => state.satoshi)
   const lizard = useGameStore((state) => state.lizard)
@@ -92,12 +110,12 @@ function App() {
   const koKnockedDown = satoshi.pose === 'knockedDown' || lizard.pose === 'knockedDown'
   const bg3 = useBg3FlashState({
     flashActive: koKnockedDown,
-    sceneWidthPx: REFERENCE_WIDTH,
-    sceneHeightPx: REFERENCE_HEIGHT,
+    sceneWidthPx,
+    sceneHeightPx,
   })
   const bg4 = useBg4SignState({
-    sceneWidthPx: REFERENCE_WIDTH,
-    sceneHeightPx: REFERENCE_HEIGHT,
+    sceneWidthPx,
+    sceneHeightPx,
     ringIndex,
     koKnockedDown,
     bg3FlashSpawnCount: bg3.flashSpawns.length,
@@ -146,7 +164,7 @@ function App() {
     <main ref={appShellRef} className="app-shell">
       {!splashDone ? <SplashSequence onDone={onSplashDone} /> : null}
       <div className="app-layout">
-        <div className="stage-anchor">
+        <div className="stage-anchor" ref={stageAnchorRef}>
           <Stage shellRef={appShellRef}>
             <FightScene
               satoshi={satoshi}
@@ -158,6 +176,8 @@ function App() {
               bg3FlashSpawns={bg3.flashSpawns}
               bg3AudienceFlashUntilMs={bg3.audienceFlashUntilMs}
               bg3FlashSizePx={bg3.flashSizePx}
+              sceneCoordWidthPx={sceneWidthPx}
+              sceneCoordHeightPx={sceneHeightPx}
               bg4SignSpawns={bg4.signSpawns}
               bg4SignSizePx={bg4.signSizePx}
               showFg3Cat={fg3.active}

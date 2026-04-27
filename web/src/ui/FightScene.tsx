@@ -55,6 +55,8 @@ interface FightSceneProps {
   bg3FlashSpawns: Bg3FlashSpawn[]
   bg3AudienceFlashUntilMs: number
   bg3FlashSizePx: number
+  sceneCoordWidthPx: number
+  sceneCoordHeightPx: number
   bg4SignSpawns: Bg4SignSpawn[]
   bg4SignSizePx: number
   showFg3Cat: boolean
@@ -126,6 +128,8 @@ export const FightScene = ({
   bg3FlashSpawns,
   bg3AudienceFlashUntilMs,
   bg3FlashSizePx,
+  sceneCoordWidthPx,
+  sceneCoordHeightPx,
   bg4SignSpawns,
   bg4SignSizePx,
   showFg3Cat,
@@ -215,8 +219,8 @@ export const FightScene = ({
   }
   const ringSrc = resolveMobileAssetUrl(ringFile(ringIndex))
   const fg3CatSrc = resolveMobileAssetUrl(fg3CatFile(fg3Direction, fg3Frame))
-  const bg4SizeW = sceneWidthPx > 0 ? bg4SignSizePx / sceneWidthPx : 0
-  const bg4SizeH = sceneHeightPx > 0 ? bg4SignSizePx / sceneHeightPx : 0
+  const coordWidthPx = sceneCoordWidthPx > 0 ? sceneCoordWidthPx : REFERENCE_WIDTH
+  const coordHeightPx = sceneCoordHeightPx > 0 ? sceneCoordHeightPx : REFERENCE_HEIGHT
   const fg3Style: CSSProperties = {
     position: 'absolute',
     zIndex: m.fg3.zIndex,
@@ -270,10 +274,10 @@ export const FightScene = ({
             const bg4Style: CSSProperties = {
               position: 'absolute',
               zIndex: m.buySigns.zIndex,
-              left: `${((sign.xPx - bg4SignSizePx / 2) / REFERENCE_WIDTH) * 100}%`,
-              top: `${((sign.yPx - bg4SignSizePx / 2) / REFERENCE_HEIGHT) * 100}%`,
-              width: `${bg4SizeW * 100}%`,
-              height: `${bg4SizeH * 100}%`,
+              left: `${((sign.xPx - bg4SignSizePx / 2) / coordWidthPx) * 100}%`,
+              top: `${((sign.yPx - bg4SignSizePx / 2) / coordHeightPx) * 100}%`,
+              width: `${(bg4SignSizePx / coordWidthPx) * 100}%`,
+              height: `${(bg4SignSizePx / coordHeightPx) * 100}%`,
               objectFit: 'contain',
               pointerEvents: 'none',
             }
@@ -294,10 +298,10 @@ export const FightScene = ({
         const bg3Style: CSSProperties = {
           position: 'absolute',
           zIndex: m.flash.zIndex,
-          left: `${((spawn.xPx - bg3FlashSizePx / 2) / REFERENCE_WIDTH) * 100}%`,
-          top: `${((spawn.yPx - bg3FlashSizePx / 2) / REFERENCE_HEIGHT) * 100}%`,
-          width: `${(bg3FlashSizePx / REFERENCE_WIDTH) * 100}%`,
-          height: `${(bg3FlashSizePx / REFERENCE_HEIGHT) * 100}%`,
+          left: `${((spawn.xPx - bg3FlashSizePx / 2) / coordWidthPx) * 100}%`,
+          top: `${((spawn.yPx - bg3FlashSizePx / 2) / coordHeightPx) * 100}%`,
+          width: `${(bg3FlashSizePx / coordWidthPx) * 100}%`,
+          height: `${(bg3FlashSizePx / coordHeightPx) * 100}%`,
           objectFit: 'contain',
           pointerEvents: 'none',
         }
