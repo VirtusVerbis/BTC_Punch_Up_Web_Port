@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { VIDEO_OVERLAY_TOP_PX_WEB } from './androidMirrorConstants'
+import { VIDEO_SET_TO_VIDEO_ID } from './videoOverlayConfig'
 
 interface VideoOverlayProps {
   videoId: string
@@ -66,6 +67,7 @@ export function VideoOverlay({
   onClose,
   sceneWidthPx,
 }: VideoOverlayProps) {
+  if (!Object.values(VIDEO_SET_TO_VIDEO_ID).includes(videoId)) return null
   const playerId = useMemo(
     () => `yt-overlay-${videoId}-${Math.random().toString(36).slice(2, 8)}`,
     [videoId],
