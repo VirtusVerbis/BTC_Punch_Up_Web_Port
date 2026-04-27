@@ -26,7 +26,7 @@ const fighter = (over: Partial<FighterState>): FighterState => ({
 
 describe('fighterSprite', () => {
   it('picks idle Satoshi frame', () => {
-    const f = pickFighterSpriteFile('satoshi', 'idle', 'offense', 'none', null, null, null, 0)
+    const f = pickFighterSpriteFile('satoshi', 'idle', 'offense', 'none', null, null, null, false, 0)
     expect(f).toMatch(/^satoshi_ready_\d\.png$/)
   })
 
@@ -69,8 +69,62 @@ describe('fighterSprite', () => {
       { hand: 'left', punchType: 'jab', startTs: 0 },
       0,
       null,
+      false,
       40,
     )
     expect(f).toBe('lizard_left_small_head_dmg_0.png')
+  })
+
+  it('forces idle when opponent is in KO even if fighter is attacking', () => {
+    const last: AttackEvent = {
+      attacker: 'satoshi',
+      hand: 'left',
+      punchType: 'cross',
+      landed: false,
+      ts: 0,
+      startedTs: 0,
+    }
+    const f = pickFighterSpriteFile(
+      'satoshi',
+      'attacking',
+      'offense',
+      'none',
+      null,
+      null,
+      last,
+      true,
+      80,
+    )
+    expect(f).toMatch(/^satoshi_ready_\d\.png$/)
+  })
+
+  it('forces idle when opponent is in KO even if fighter is defending', () => {
+    const f = pickFighterSpriteFile(
+      'lizard',
+      'defending',
+      'defense',
+      'headBlock',
+      null,
+      0,
+      null,
+      true,
+      80,
+    )
+    expect(f).toMatch(/^lizard_idle_\d\.png$/)
+  })
+
+  it('keeps self KO sprite precedence over opponent KO idle gate', () => {
+    const f = pickFighterSpriteFile(
+      'lizard',
+      'knockedDown',
+      'offense',
+      'none',
+      null,
+      null,
+      null,
+      true,
+      0,
+    )
+    expect(f).toBe('lizard_knocked_down_0.png')
   })
 })

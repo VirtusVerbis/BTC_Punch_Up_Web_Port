@@ -232,6 +232,9 @@ export const FightScene = ({
     pointerEvents: 'none',
   }
 
+  const satoshiInKo = satoshi.pose === 'fall' || satoshi.pose === 'knockedDown' || satoshi.pose === 'rise'
+  const lizardInKo = lizard.pose === 'fall' || lizard.pose === 'knockedDown' || lizard.pose === 'rise'
+
   const satoshiSrc = fighterSpriteUrl(
     'satoshi',
     satoshi.pose,
@@ -240,6 +243,7 @@ export const FightScene = ({
     satoshi.damageAnim,
     satoshi.defenseStripStartTs,
     lastAttack,
+    lizardInKo,
     nowMs,
   )
   const lizardSrc = fighterSpriteUrl(
@@ -250,6 +254,7 @@ export const FightScene = ({
     lizard.damageAnim,
     lizard.defenseStripStartTs,
     lastAttack,
+    satoshiInKo,
     nowMs,
   )
 

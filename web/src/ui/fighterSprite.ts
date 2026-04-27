@@ -118,6 +118,7 @@ export const pickFighterSpriteFile = (
   damageAnim: FighterState['damageAnim'],
   defenseStripStartTs: FighterState['defenseStripStartTs'],
   lastAttack: AttackEvent | null,
+  opponentInKo: boolean,
   nowMs: number,
 ): string => {
   if (pose === 'fall' || pose === 'knockedDown' || pose === 'rise') {
@@ -128,6 +129,11 @@ export const pickFighterSpriteFile = (
     const elapsed = Math.max(0, nowMs - damageAnim.startTs)
     const frame = Math.floor(elapsed / ANIMATION_FRAME_DELAY_MS)
     return damageSpriteFile(fighter, damageAnim.hand, damageAnim.punchType, frame)
+  }
+
+  // Mobile parity: if opponent is in KO phase, standing boxer idles.
+  if (opponentInKo) {
+    return idleFile(fighter, nowMs)
   }
 
   if (pose === 'attacking' && lastAttack?.attacker === fighter) {
@@ -154,10 +160,21 @@ export const fighterSpriteUrl = (
   damageAnim: FighterState['damageAnim'],
   defenseStripStartTs: FighterState['defenseStripStartTs'],
   lastAttack: AttackEvent | null,
+  opponentInKo: boolean,
   nowMs: number,
 ): string =>
   resolveMobileAssetUrl(
-    pickFighterSpriteFile(fighter, pose, mode, defenseType, damageAnim, defenseStripStartTs, lastAttack, nowMs),
+    pickFighterSpriteFile(
+      fighter,
+      pose,
+      mode,
+      defenseType,
+      damageAnim,
+      defenseStripStartTs,
+      lastAttack,
+      opponentInKo,
+      nowMs,
+    ),
   )
 
 export const audienceFile = (ringIndex: number, subFrame: number): string =>
