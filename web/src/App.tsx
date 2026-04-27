@@ -95,7 +95,6 @@ function App() {
   const lizardKoCount = useGameStore((state) => state.lizardKoCount)
   const applyMarketTick = useGameStore((state) => state.applyMarketTick)
   const advanceCombat = useGameStore((state) => state.advanceCombat)
-  const toggleCharacterAlignment = useGameStore((state) => state.toggleCharacterAlignment)
 
   const setFeedRef = useRef(setFeed)
   setFeedRef.current = setFeed
@@ -206,7 +205,7 @@ function App() {
               lizardMode={lizard.mode}
               satoshiKoCount={satoshiKoCount}
               lizardKoCount={lizardKoCount}
-              onTimeClick={toggleCharacterAlignment}
+              onTimeClick={() => {}}
               status={feed.status}
             />
             {videoOverlay.active ? (
