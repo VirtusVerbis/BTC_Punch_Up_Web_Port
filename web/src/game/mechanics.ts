@@ -1,9 +1,26 @@
 import {
+  DEFENSE_BODY_BLOCK_MAX,
+  DEFENSE_BODY_BLOCK_MIN,
+  DEFENSE_DODGE_LEFT_MAX,
+  DEFENSE_DODGE_LEFT_MIN,
+  DEFENSE_DODGE_RIGHT_MAX,
+  DEFENSE_DODGE_RIGHT_MIN,
+  DEFENSE_HEAD_BLOCK_MAX,
+  DEFENSE_HEAD_BLOCK_MIN,
   KO_SEQUENCE_MS,
   MAX_DAMAGE_POINTS,
   PUNCH_COOLDOWNS_MS,
   PUNCH_DAMAGE,
-  PUNCH_THRESHOLDS,
+  VOLUME_PERCENT_BODY_MAX,
+  VOLUME_PERCENT_BODY_MIN,
+  VOLUME_PERCENT_CROSS_MAX,
+  VOLUME_PERCENT_CROSS_MIN,
+  VOLUME_PERCENT_HOOK_MAX,
+  VOLUME_PERCENT_HOOK_MIN,
+  VOLUME_PERCENT_JAB_MAX,
+  VOLUME_PERCENT_JAB_MIN,
+  VOLUME_PERCENT_UPPERCUT_MAX,
+  VOLUME_PERCENT_UPPERCUT_MIN,
 } from '../config/constants'
 import { MIN_IDLE_AFTER_DEFENSE_MS } from '../ui/androidMirrorConstants'
 import type {
@@ -24,41 +41,38 @@ export const createEmptyLastPunchUsedAt = (): Record<PunchType, number> => ({
   uppercut: 0,
 })
 
-const toPercent = (value: number, maxValue: number): number => {
-  if (maxValue <= 0) {
-    return 0
-  }
-  return Math.max(0, Math.min(100, Math.round((value / maxValue) * 100)))
-}
-
 /** Android `getPunchTypeFromVolume`: null when no positive volume or max. */
-export const pickPunchTypeFromPercent = (percent: number | null): PunchType | null => {
-  if (percent === null || percent <= 0) return null
-  for (const band of PUNCH_THRESHOLDS) {
-    if (percent <= band.maxPercent) {
-      return band.type
-    }
-  }
-  return 'uppercut'
+export const pickPunchTypeFromPercent = (percent: number | null): PunchType | null =>
+  pickPunchTypeFromRatio(percent === null ? null : percent / 100)
+
+export const pickPunchTypeFromRatio = (ratio: number | null): PunchType | null => {
+  if (ratio === null || ratio <= 0) return null
+  if (ratio >= VOLUME_PERCENT_UPPERCUT_MIN && ratio <= VOLUME_PERCENT_UPPERCUT_MAX) return 'uppercut'
+  if (ratio >= VOLUME_PERCENT_CROSS_MIN && ratio <= VOLUME_PERCENT_CROSS_MAX) return 'cross'
+  if (ratio >= VOLUME_PERCENT_HOOK_MIN && ratio <= VOLUME_PERCENT_HOOK_MAX) return 'hook'
+  if (ratio >= VOLUME_PERCENT_BODY_MIN && ratio <= VOLUME_PERCENT_BODY_MAX) return 'body'
+  if (ratio >= VOLUME_PERCENT_JAB_MIN && ratio <= VOLUME_PERCENT_JAB_MAX) return 'jab'
+  return null
 }
 
 export const pickPunchType = (percent: number): PunchType => pickPunchTypeFromPercent(percent) ?? 'jab'
 
 export const pickDefenseType = (
-  binanceBuyPercent: number,
-  coinbaseBuyPercent: number,
+  binanceBuyRatio: number | null,
+  coinbaseBuyRatio: number | null,
 ): DefenseType => {
-  const highest = Math.max(binanceBuyPercent, coinbaseBuyPercent)
-  if (highest >= 57) {
+  if (binanceBuyRatio === null || coinbaseBuyRatio === null) return 'none'
+  const highest = Math.max(binanceBuyRatio, coinbaseBuyRatio)
+  if (highest >= DEFENSE_HEAD_BLOCK_MIN && highest <= DEFENSE_HEAD_BLOCK_MAX) {
     return 'headBlock'
   }
-  if (highest >= 24) {
+  if (highest >= DEFENSE_BODY_BLOCK_MIN && highest <= DEFENSE_BODY_BLOCK_MAX) {
     return 'bodyBlock'
   }
-  if (binanceBuyPercent >= 1 && binanceBuyPercent <= 23) {
+  if (binanceBuyRatio >= DEFENSE_DODGE_LEFT_MIN && binanceBuyRatio <= DEFENSE_DODGE_LEFT_MAX) {
     return 'dodgeLeft'
   }
-  if (coinbaseBuyPercent >= 1 && coinbaseBuyPercent <= 23) {
+  if (coinbaseBuyRatio >= DEFENSE_DODGE_RIGHT_MIN && coinbaseBuyRatio <= DEFENSE_DODGE_RIGHT_MAX) {
     return 'dodgeRight'
   }
   return 'none'
@@ -136,6 +150,36 @@ export interface HandPercents {
   rightPercent: number | null
 }
 
+export interface HandRatios {
+  leftRatio: number | null
+  rightRatio: number | null
+}
+
+const toPercent = (value: number, maxValue: number): number => {
+  if (maxValue <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((value / maxValue) * 100)))
+}
+
+const ratioFromHistoricalMax = (value: number, maxValue: number): number | null => {
+  if (value <= 0 || maxValue <= 0) return null
+  const ratio = value / maxValue
+  return Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) : null
+}
+
+/**
+ * Mobile parity: normalize each hand against its own historical exchange max
+ * (not against the current tick's largest hand).
+ */
+export const getHandRatiosFromHistoricalMax = (
+  leftVolume: number,
+  rightVolume: number,
+  leftHistoricalMax: number,
+  rightHistoricalMax: number,
+): HandRatios => ({
+  leftRatio: ratioFromHistoricalMax(leftVolume, leftHistoricalMax),
+  rightRatio: ratioFromHistoricalMax(rightVolume, rightHistoricalMax),
+})
+
 export const getHandPercents = (market: MarketSnapshot, volumeType: 'buy' | 'sell'): HandPercents => {
   const binanceVolume = volumeType === 'buy' ? market.binance.buyVolume : market.binance.sellVolume
   const coinbaseVolume =
@@ -168,12 +212,12 @@ export const selectDualHandPunch = (
 export const nextAttackIfAvailable = (
   fighter: FighterState,
   ts: number,
-  handPercent: number | null,
+  handRatio: number | null,
 ): PunchType | null => {
   if (ts < fighter.koLockedUntil) {
     return null
   }
-  const punchType = pickPunchTypeFromPercent(handPercent)
+  const punchType = pickPunchTypeFromRatio(handRatio)
   if (punchType === null) return null
   const cooldown = PUNCH_COOLDOWNS_MS[punchType]
   const lastUsed = fighter.lastPunchUsedAt[punchType]

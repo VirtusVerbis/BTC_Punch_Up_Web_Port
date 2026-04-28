@@ -103,8 +103,14 @@ function App() {
   const advanceCombatRef = useRef(advanceCombat)
   advanceCombatRef.current = advanceCombat
 
-  const koLockedUntil = Math.max(satoshi.koLockedUntil, lizard.koLockedUntil)
-  const ringIndex = useRingRotation(koLockedUntil)
+  const koPhaseActive =
+    satoshi.pose === 'fall' ||
+    satoshi.pose === 'knockedDown' ||
+    satoshi.pose === 'rise' ||
+    lizard.pose === 'fall' ||
+    lizard.pose === 'knockedDown' ||
+    lizard.pose === 'rise'
+  const ringIndex = useRingRotation(koPhaseActive)
   const audienceSubFrame = useAudienceSubFrame()
   const bg2Meme = useBg2MemeState(feed.market.binance.price, feed.market.coinbase.price)
   const hasActiveBg2Meme = bg2Meme.activeMeme !== null

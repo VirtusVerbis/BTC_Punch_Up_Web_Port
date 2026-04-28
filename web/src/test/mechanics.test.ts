@@ -5,6 +5,7 @@ import {
   defenseBlocksPunch,
   deriveLizardRingMode,
   deriveSatoshiRingMode,
+  getHandRatiosFromHistoricalMax,
   nextAttackIfAvailable,
   pickDefenseType,
   pickPunchType,
@@ -23,10 +24,15 @@ describe('mechanics thresholds', () => {
   })
 
   test('maps defense thresholds correctly', () => {
-    expect(pickDefenseType(60, 30)).toBe('headBlock')
-    expect(pickDefenseType(32, 20)).toBe('bodyBlock')
-    expect(pickDefenseType(14, 0)).toBe('dodgeLeft')
-    expect(pickDefenseType(0, 17)).toBe('dodgeRight')
+    expect(pickDefenseType(0.6, 0.3)).toBe('headBlock')
+    expect(pickDefenseType(0.32, 0.2)).toBe('bodyBlock')
+    expect(pickDefenseType(0.14, 0.0)).toBe('dodgeLeft')
+    expect(pickDefenseType(0.0, 0.17)).toBe('dodgeRight')
+  })
+
+  test('returns none when either defense side has invalid ratio', () => {
+    expect(pickDefenseType(null, 0.2)).toBe('none')
+    expect(pickDefenseType(0.2, null)).toBe('none')
   })
 
   test('defense rules match attack family', () => {
@@ -74,6 +80,12 @@ describe('mechanics thresholds', () => {
     expect(resolveDefenseTypeWithCooldown('bodyBlock', 'headBlock', 0, 1200)).toBe('bodyBlock')
   })
 
+  test('historical-max normalization mirrors mobile behavior', () => {
+    expect(getHandRatiosFromHistoricalMax(50, 20, 100, 40)).toEqual({ leftRatio: 0.5, rightRatio: 0.5 })
+    expect(getHandRatiosFromHistoricalMax(0, 20, 100, 40)).toEqual({ leftRatio: null, rightRatio: 0.5 })
+    expect(getHandRatiosFromHistoricalMax(10, 20, 0, 40)).toEqual({ leftRatio: null, rightRatio: 0.5 })
+  })
+
   const fighterBase = (over: Partial<FighterState> = {}): FighterState => ({
     name: 'satoshi',
     mode: 'offense',
@@ -94,8 +106,8 @@ describe('mechanics thresholds', () => {
     const f = fighterBase({
       lastPunchUsedAt: { ...createEmptyLastPunchUsedAt(), jab: 5000 },
     })
-    expect(nextAttackIfAvailable(f, 5800, 10)).toBeNull()
-    expect(nextAttackIfAvailable(f, 6000, 10)).toBe('jab')
+    expect(nextAttackIfAvailable(f, 5800, 0.1)).toBeNull()
+    expect(nextAttackIfAvailable(f, 6000, 0.1)).toBe('jab')
   })
 
   test('nextAttackIfAvailable returns null when hand has no volume', () => {

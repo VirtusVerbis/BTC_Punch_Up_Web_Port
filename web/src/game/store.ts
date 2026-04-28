@@ -6,7 +6,7 @@ import {
   createEmptyLastPunchUsedAt,
   defenseBlocksPunch,
   gateDefenseAfterLeavingDefense,
-  getHandPercents,
+  getHandRatiosFromHistoricalMax,
   nextAttackIfAvailable,
   pickDefenseType,
   resolveDefenseTypeWithCooldown,
@@ -30,6 +30,10 @@ interface GameState {
   satoshiKoCount: number
   /** KOs scored by Lizard (Satoshi knocked out). Mirrors Android `lizardKOCount`. */
   lizardKoCount: number
+  maxBinanceBuyVolume: number
+  maxCoinbaseBuyVolume: number
+  maxBinanceSellVolume: number
+  maxCoinbaseSellVolume: number
   applyMarketTick: (market: MarketSnapshot, ts?: number) => void
   advanceCombat: (ts?: number) => void
   toggleCharacterAlignment: () => void
@@ -148,6 +152,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   alignCharacters: false,
   satoshiKoCount: 0,
   lizardKoCount: 0,
+  maxBinanceBuyVolume: 0,
+  maxCoinbaseBuyVolume: 0,
+  maxBinanceSellVolume: 0,
+  maxCoinbaseSellVolume: 0,
 
   advanceCombat: (ts = Date.now()) => {
     set((state) => {
@@ -269,8 +277,35 @@ export const useGameStore = create<GameState>((set, get) => ({
     const current = get()
     const opponentLizardKoUntil = current.lizard.koLockedUntil
     const opponentSatoshiKoUntil = current.satoshi.koLockedUntil
-    const buyPercents = getHandPercents(market, 'buy')
-    const sellPercents = getHandPercents(market, 'sell')
+    const maxBinanceBuyVolume =
+      market.binance.buyVolume > 0
+        ? Math.max(current.maxBinanceBuyVolume, market.binance.buyVolume)
+        : current.maxBinanceBuyVolume
+    const maxCoinbaseBuyVolume =
+      market.coinbase.buyVolume > 0
+        ? Math.max(current.maxCoinbaseBuyVolume, market.coinbase.buyVolume)
+        : current.maxCoinbaseBuyVolume
+    const maxBinanceSellVolume =
+      market.binance.sellVolume > 0
+        ? Math.max(current.maxBinanceSellVolume, market.binance.sellVolume)
+        : current.maxBinanceSellVolume
+    const maxCoinbaseSellVolume =
+      market.coinbase.sellVolume > 0
+        ? Math.max(current.maxCoinbaseSellVolume, market.coinbase.sellVolume)
+        : current.maxCoinbaseSellVolume
+
+    const buyRatios = getHandRatiosFromHistoricalMax(
+      market.binance.buyVolume,
+      market.coinbase.buyVolume,
+      maxBinanceBuyVolume,
+      maxCoinbaseBuyVolume,
+    )
+    const sellRatios = getHandRatiosFromHistoricalMax(
+      market.binance.sellVolume,
+      market.coinbase.sellVolume,
+      maxBinanceSellVolume,
+      maxCoinbaseSellVolume,
+    )
 
     let satoshi = clearDamageAnimIfDone(current.satoshi, ts)
     let lizard = clearDamageAnimIfDone(current.lizard, ts)
@@ -298,14 +333,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     satoshi = stepFighterFromMarket(
       satoshi,
       deriveSatoshiRingMode(market),
-      pickDefenseType(buyPercents.leftPercent ?? 0, buyPercents.rightPercent ?? 0),
+      pickDefenseType(buyRatios.leftRatio, buyRatios.rightRatio),
       ts,
     )
 
     lizard = stepFighterFromMarket(
       lizard,
       deriveLizardRingMode(market),
-      pickDefenseType(sellPercents.leftPercent ?? 0, sellPercents.rightPercent ?? 0),
+      pickDefenseType(sellRatios.leftRatio, sellRatios.rightRatio),
       ts,
     )
 
@@ -313,8 +348,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     let activePunchSequence = current.activePunchSequence
 
     if (activePunchSequence === null) {
-      const satoshiLeftPunch = nextAttackIfAvailable(satoshi, ts, buyPercents.leftPercent)
-      const satoshiRightPunch = nextAttackIfAvailable(satoshi, ts, buyPercents.rightPercent)
+      const satoshiLeftPunch = nextAttackIfAvailable(satoshi, ts, buyRatios.leftRatio)
+      const satoshiRightPunch = nextAttackIfAvailable(satoshi, ts, buyRatios.rightRatio)
       const satoshiChosen = selectDualHandPunch(satoshiLeftPunch, satoshiRightPunch, PUNCH_PRIORITY_HAND)
       if (
         satoshi.mode === 'offense' &&
@@ -344,8 +379,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           startedTs: ts,
         }
       } else {
-        const lizardLeftPunch = nextAttackIfAvailable(lizard, ts, sellPercents.leftPercent)
-        const lizardRightPunch = nextAttackIfAvailable(lizard, ts, sellPercents.rightPercent)
+        const lizardLeftPunch = nextAttackIfAvailable(lizard, ts, sellRatios.leftRatio)
+        const lizardRightPunch = nextAttackIfAvailable(lizard, ts, sellRatios.rightRatio)
         const lizardChosen = selectDualHandPunch(lizardLeftPunch, lizardRightPunch, PUNCH_PRIORITY_HAND)
         if (
           lizard.mode === 'offense' &&
@@ -378,7 +413,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    set({ satoshi, lizard, lastAttack, activePunchSequence, satoshiKoCount, lizardKoCount })
+    set({
+      satoshi,
+      lizard,
+      lastAttack,
+      activePunchSequence,
+      satoshiKoCount,
+      lizardKoCount,
+      maxBinanceBuyVolume,
+      maxCoinbaseBuyVolume,
+      maxBinanceSellVolume,
+      maxCoinbaseSellVolume,
+    })
   },
 
   toggleCharacterAlignment: () => {
