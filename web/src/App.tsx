@@ -243,6 +243,14 @@ function App() {
               draggable={false}
             />
           </a>
+          <div className="repo-link-lnurl" aria-label="LNURL address">
+            <img
+              className="lnurl-badge"
+              src="/mobile/lnurl_address.jpg.jpeg"
+              alt="LNURL address"
+              draggable={false}
+            />
+          </div>
           <a
             className="repo-link"
             href="https://github.com/VirtusVerbis/BTC_Punch_Up_Web_Port"
