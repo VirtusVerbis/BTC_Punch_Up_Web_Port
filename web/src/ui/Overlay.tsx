@@ -22,16 +22,8 @@ interface OverlayProps {
   }
 }
 
-const maxVolumeAll = (m: MarketSnapshot): number => {
-  const v = Math.max(
-    m.binance.buyVolume,
-    m.binance.sellVolume,
-    m.coinbase.buyVolume,
-    m.coinbase.sellVolume,
-    1,
-  )
-  return v
-}
+const exchangeMaxVolume = (buyVolume: number, sellVolume: number): number =>
+  Math.max(buyVolume, sellVolume, 1)
 
 const modeLabel = (mode: Mode): string => (mode === 'offense' ? 'Offense' : 'Defense')
 const PRICE_GRAY = '#757575'
@@ -146,7 +138,8 @@ export const Overlay = ({
   onTimeClick,
   status,
 }: OverlayProps) => {
-  const maxV = maxVolumeAll(market)
+  const binanceMaxV = exchangeMaxVolume(market.binance.buyVolume, market.binance.sellVolume)
+  const coinbaseMaxV = exchangeMaxVolume(market.coinbase.buyVolume, market.coinbase.sellVolume)
   const prevBinance = useRef<number | undefined>(undefined)
   const prevCoinbase = useRef<number | undefined>(undefined)
   const prevBinBuy = useRef<number | undefined>(undefined)
@@ -332,14 +325,14 @@ export const Overlay = ({
           </p>
           <VolumeBar
             volume={market.binance.buyVolume}
-            maxVolume={maxV}
+            maxVolume={binanceMaxV}
             color="#4caf50"
             alignEnd={false}
             animate={binPulse}
           />
           <VolumeBar
             volume={market.binance.sellVolume}
-            maxVolume={maxV}
+            maxVolume={binanceMaxV}
             color="#f44336"
             alignEnd={false}
             animate={binPulse}
@@ -366,14 +359,14 @@ export const Overlay = ({
           </p>
           <VolumeBar
             volume={market.coinbase.buyVolume}
-            maxVolume={maxV}
+            maxVolume={coinbaseMaxV}
             color="#4caf50"
             alignEnd
             animate={cbPulse}
           />
           <VolumeBar
             volume={market.coinbase.sellVolume}
-            maxVolume={maxV}
+            maxVolume={coinbaseMaxV}
             color="#f44336"
             alignEnd
             animate={cbPulse}
