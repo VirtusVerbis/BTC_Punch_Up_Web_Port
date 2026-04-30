@@ -243,6 +243,20 @@ function App() {
               draggable={false}
             />
           </a>
+          <a
+            className="repo-link repo-link-zapstore"
+            href="https://zapstore.dev/apps/com.vv.btcpunchup"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="BTC Punch Up on Zapstore"
+          >
+            <img
+              className="zapstore-badge"
+              src="/zapstore_badge.png"
+              alt="Get it on Zapstore"
+              draggable={false}
+            />
+          </a>
           <div className="repo-link-lnurl" aria-label="LNURL address">
             <img
               className="lnurl-badge"
