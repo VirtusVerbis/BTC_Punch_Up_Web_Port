@@ -107,7 +107,7 @@ export const parseBinanceTickerClosePrice = (payload: unknown): number | null =>
   return parsed.data.c
 }
 
-/** Coinbase ticker updates **price only** (volumes come from L2 + matches on Android). */
+/** Coinbase ticker updates **price only** (HUD volumes: WS `match` + REST trades aggregate; not order-book depth). */
 export const parseCoinbaseTickerPrice = (payload: unknown): number | null => {
   const parsed = coinbaseTickerSchema.safeParse(payload)
   if (!parsed.success || parsed.data.price <= 0) return null
@@ -169,3 +169,33 @@ export const coinbaseSnapshotTop50Volumes = (
 })
 
 export const parseCoinbaseLevel2Snapshot = (payload: unknown) => coinbaseLevel2SnapshotSchema.safeParse(payload)
+
+/** One row from `GET /products/{id}/trades` (Coinbase Exchange REST). */
+const coinbaseRestTradeRowSchema = z
+  .object({
+    side: z.enum(['buy', 'sell']),
+    size: z.union([z.string(), z.number()]),
+  })
+  .passthrough()
+
+export const coinbaseTradesResponseSchema = z.array(coinbaseRestTradeRowSchema)
+
+/**
+ * Sum executed size by taker `side` over a Coinbase Exchange `trades` JSON array.
+ * Used for REST fallback tape volumes (mirrors Binance recent-trades replacement pattern).
+ */
+export const aggregateCoinbaseTradesVolumes = (raw: unknown): { buyVolume: number; sellVolume: number } => {
+  const parsed = coinbaseTradesResponseSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { buyVolume: 0, sellVolume: 0 }
+  }
+  let buyVolume = 0
+  let sellVolume = 0
+  for (const row of parsed.data) {
+    const q = typeof row.size === 'string' ? Number(row.size) : row.size
+    if (!Number.isFinite(q) || q <= 0) continue
+    if (row.side === 'buy') buyVolume += q
+    else sellVolume += q
+  }
+  return { buyVolume, sellVolume }
+}

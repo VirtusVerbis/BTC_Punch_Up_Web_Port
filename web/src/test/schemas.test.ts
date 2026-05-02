@@ -1,4 +1,5 @@
 import {
+  aggregateCoinbaseTradesVolumes,
   coinbaseSnapshotTop50Volumes,
   normalizeBinanceTrade,
   normalizeCoinbaseFeedMessage,
@@ -126,6 +127,18 @@ describe('socket payload parsing', () => {
       expect(v.buyVolume).toBeCloseTo(3.5)
       expect(v.sellVolume).toBeCloseTo(0.5)
     }
+  })
+
+  test('aggregates Coinbase REST trades by side for tape fallback', () => {
+    expect(
+      aggregateCoinbaseTradesVolumes([
+        { trade_id: 1, side: 'buy', size: '0.1', price: '100' },
+        { trade_id: 2, side: 'sell', size: 0.2, price: '101' },
+        { trade_id: 3, side: 'buy', size: 'not-a-number', price: '102' },
+      ]),
+    ).toEqual({ buyVolume: 0.1, sellVolume: 0.2 })
+    expect(aggregateCoinbaseTradesVolumes(null)).toEqual({ buyVolume: 0, sellVolume: 0 })
+    expect(aggregateCoinbaseTradesVolumes({})).toEqual({ buyVolume: 0, sellVolume: 0 })
   })
 })
 

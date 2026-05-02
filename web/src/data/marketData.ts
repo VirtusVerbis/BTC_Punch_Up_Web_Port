@@ -2,8 +2,8 @@ import { env } from '../config/env'
 import type { ExchangeSnapshot, MarketSnapshot } from '../game/types'
 import { EXCHANGE_EMIT_THROTTLE_MS, VOLUME_RESET_INTERVAL_MS } from './exchangeConstants'
 import {
+  aggregateCoinbaseTradesVolumes,
   binanceTradeSchema,
-  coinbaseSnapshotTop50Volumes,
   normalizeCoinbaseMatch,
   parseBinanceTickerClosePrice,
   parseCoinbaseLevel2Snapshot,
@@ -25,6 +25,9 @@ export interface MarketFeedUpdate {
 /**
  * REST polling fills gaps when WS does not deliver usable fields (e.g. price from ticker/bookTicker but no trades).
  * Per-exchange REST is skipped only when that exchange is WS-connected, has price, and buy+sell volume > 0.
+ *
+ * Coinbase HUD/boxing volumes are **tape-only** (WS `match` + REST recent trades), not L2 book depth — differs from
+ * Android `WebSocketRepository` which seeds volumes from L2 snapshot top 50.
  */
 const ENABLE_REST_FALLBACK = true
 /** Mirror Android: direct exchange WebSockets from `BinanceWebSocketService` / `CoinbaseWebSocketService`. */
@@ -186,9 +189,6 @@ export class MarketDataService {
       const parsed = parseCoinbaseLevel2Snapshot(payload)
       if (!parsed.success) return
       if (parsed.data.product_id !== env.coinbaseProductId) return
-      const { buyVolume, sellVolume } = coinbaseSnapshotTop50Volumes(parsed.data.bids, parsed.data.asks)
-      this.coinbaseBuyAcc = buyVolume
-      this.coinbaseSellAcc = sellVolume
       return
     }
     if (type === 'match') {
@@ -267,26 +267,15 @@ export class MarketDataService {
           const p = Number(body?.price)
           if (Number.isFinite(p) && p > 0) this.latestCoinbasePrice = p
         }
-        const bookRes = await fetch(`${coinbaseBase}/products/${encodeURIComponent(env.coinbaseProductId)}/book?level=2`)
-        if (bookRes.ok) {
-          const body = (await bookRes.json()) as { bids?: unknown[]; asks?: unknown[] }
-          const bids = Array.isArray(body?.bids) ? body.bids : []
-          const asks = Array.isArray(body?.asks) ? body.asks : []
-          let buy = 0
-          let sell = 0
-          for (let i = 0; i < Math.min(50, bids.length); i += 1) {
-            const row = bids[i]
-            const size = Array.isArray(row) ? Number(row[1]) : NaN
-            if (Number.isFinite(size) && size > 0) buy += size
-          }
-          for (let i = 0; i < Math.min(50, asks.length); i += 1) {
-            const row = asks[i]
-            const size = Array.isArray(row) ? Number(row[1]) : NaN
-            if (Number.isFinite(size) && size > 0) sell += size
-          }
-          if (buy + sell > 0) {
-            this.coinbaseBuyAcc = buy
-            this.coinbaseSellAcc = sell
+        const tradesRes = await fetch(
+          `${coinbaseBase}/products/${encodeURIComponent(env.coinbaseProductId)}/trades?limit=80`,
+        )
+        if (tradesRes.ok) {
+          const tradesJson: unknown = await tradesRes.json()
+          const { buyVolume, sellVolume } = aggregateCoinbaseTradesVolumes(tradesJson)
+          if (buyVolume + sellVolume > 0) {
+            this.coinbaseBuyAcc = buyVolume
+            this.coinbaseSellAcc = sellVolume
           }
         }
         if (this.latestCoinbasePrice > 0) {
