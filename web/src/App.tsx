@@ -283,6 +283,11 @@ function App() {
             <GitHubMark />
             <span>Android Repo</span>
           </a>
+          <p className="repo-release-note">
+            Released on 2026-Apr-26
+            <br />
+            Bitcoin was $79k.
+          </p>
         </aside>
       </div>
     </main>
