@@ -279,7 +279,7 @@ function App() {
               Related Sites
             </h2>
             <a
-              className="repo-link repo-link-related"
+              className="repo-related-item"
               href="https://bitcoinmidnight.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -289,7 +289,7 @@ function App() {
               <span className="repo-link-related-tagline">BTC Price, Open Interest Interactive Craps</span>
             </a>
             <a
-              className="repo-link repo-link-related"
+              className="repo-related-item"
               href="https://bitcoinbloodhound.com"
               target="_blank"
               rel="noopener noreferrer"
