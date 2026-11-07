@@ -60,6 +60,19 @@ const GitHubMark = () => (
   </svg>
 )
 
+const RELATED_SITES = [
+  {
+    href: 'https://bitcoinmidnight.com',
+    domain: 'bitcoinmidnight.com',
+    tagline: 'BTC Price, Open Interest Interactive Craps',
+  },
+  {
+    href: 'https://bitcoinbloodhound.com',
+    domain: 'bitcoinbloodhound.com',
+    tagline: 'BTC Coldcard Hack Tracker',
+  },
+] as const
+
 function App() {
   const appShellRef = useRef<HTMLElement | null>(null)
   const stageAnchorRef = useRef<HTMLDivElement | null>(null)
@@ -275,29 +288,24 @@ function App() {
             Bitcoin was $79k.
           </p>
           <section className="repo-related-section" aria-labelledby="related-sites-heading">
-            <h2 className="repo-related-heading" id="related-sites-heading">
+            <h2 id="related-sites-heading" className="repo-related-heading">
               Related Sites
             </h2>
-            <a
-              className="repo-related-item"
-              href="https://bitcoinmidnight.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="bitcoinmidnight.com — BTC Price, Open Interest Interactive Craps"
-            >
-              <span className="repo-link-related-domain">bitcoinmidnight.com</span>
-              <span className="repo-link-related-tagline">BTC Price, Open Interest Interactive Craps</span>
-            </a>
-            <a
-              className="repo-related-item"
-              href="https://bitcoinbloodhound.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="bitcoinbloodhound.com — BTC Coldcard Hack Tracker"
-            >
-              <span className="repo-link-related-domain">bitcoinbloodhound.com</span>
-              <span className="repo-link-related-tagline">BTC Coldcard Hack Tracker</span>
-            </a>
+            <ul className="repo-related-list">
+              {RELATED_SITES.map((site) => (
+                <li key={site.href} className="repo-related-list-item">
+                  <a
+                    className="repo-related-domain"
+                    href={site.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {site.domain}
+                  </a>
+                  <span className="repo-related-tagline">{site.tagline}</span>
+                </li>
+              ))}
+            </ul>
           </section>
         </aside>
       </div>
