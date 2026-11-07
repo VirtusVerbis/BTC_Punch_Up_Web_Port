@@ -228,21 +228,7 @@ function App() {
           </Stage>
         </div>
 
-        <aside className="repo-links-panel" aria-label="Source repositories">
-          <a
-            className="repo-link repo-link-playstore"
-            href="https://play.google.com/store/apps/details?id=com.vv.btcpunchup&pcampaignid=web_share"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="BTC Punch Up on Google Play"
-          >
-            <img
-              className="playstore-badge"
-              src="/playstore-badge.png"
-              alt="Get it on Google Play"
-              draggable={false}
-            />
-          </a>
+        <aside className="repo-links-panel" aria-label="App links and related sites">
           <a
             className="repo-link repo-link-zapstore"
             href="https://zapstore.dev/apps/com.vv.btcpunchup"
@@ -288,6 +274,31 @@ function App() {
             <br />
             Bitcoin was $79k.
           </p>
+          <section className="repo-related-section" aria-labelledby="related-sites-heading">
+            <h2 className="repo-related-heading" id="related-sites-heading">
+              Related Sites
+            </h2>
+            <a
+              className="repo-link repo-link-related"
+              href="https://bitcoinmidnight.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="bitcoinmidnight.com — BTC Price, Open Interest Interactive Craps"
+            >
+              <span className="repo-link-related-domain">bitcoinmidnight.com</span>
+              <span className="repo-link-related-tagline">BTC Price, Open Interest Interactive Craps</span>
+            </a>
+            <a
+              className="repo-link repo-link-related"
+              href="https://bitcoinbloodhound.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="bitcoinbloodhound.com — BTC Coldcard Hack Tracker"
+            >
+              <span className="repo-link-related-domain">bitcoinbloodhound.com</span>
+              <span className="repo-link-related-tagline">BTC Coldcard Hack Tracker</span>
+            </a>
+          </section>
         </aside>
       </div>
     </main>
